@@ -82,8 +82,6 @@
             <inertia ixx="0.0" ixy="0" ixz="0" iyy="0.0" iyz="0.0" izz="0.0"/>
         </inertial> 
     </link>
-    
-    
 
 
 </robot>
