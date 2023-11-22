@@ -31,15 +31,14 @@ momentum = p.addUserDebugParameter('Momentum', 0, 200, 0)
 
 p.setRealTimeSimulation(1)
 
-
-# constraint_id = p.createConstraint(parentBodyUniqueId=pendulum,
-#                                    parentLinkIndex=-1,
-#                                    childBodyUniqueId=target1,
-#                                    childLinkIndex=-1,
-#                                    jointType=p.JOINT_FIXED,
-#                                    jointAxis=[0, 0, 0],
-#                                    parentFramePosition=[0, 0, 0],
-#                                    childFramePosition=[0, 0, 0])
+constraint_id = p.createConstraint(parentBodyUniqueId=pendulum,
+                                   parentLinkIndex=0,
+                                   childBodyUniqueId=target1,
+                                   childLinkIndex=-1,
+                                   jointType=p.JOINT_FIXED,
+                                   jointAxis=[0, 0, 0],
+                                   parentFramePosition=[0, 0, 0],
+                                   childFramePosition=[0, 0, 0])
 
 def is_in_range():
     pendulum_pos, _ = p.getBasePositionAndOrientation(pendulum)
