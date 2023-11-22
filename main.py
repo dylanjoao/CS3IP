@@ -23,6 +23,7 @@ target4 = p.loadURDF(current_directory + "/pendulum_climb/assets/target.urdf", b
                      useFixedBase=True)
 pendulum = p.loadURDF(current_directory + "/pendulum_climb/assets/pendulum.urdf", basePosition=[0, 0, 1])
 
+# Joint links of pendulum
 pendulum_indices = [0, 1]
 
 directionX = p.addUserDebugParameter('DirectionX', -0.5, 0.5, 0)
@@ -31,6 +32,7 @@ momentum = p.addUserDebugParameter('Momentum', 0, 200, 0)
 
 p.setRealTimeSimulation(1)
 
+# Test constraint to hold onto the first target
 constraint_id = p.createConstraint(parentBodyUniqueId=pendulum,
                                    parentLinkIndex=0,
                                    childBodyUniqueId=target1,
@@ -39,7 +41,6 @@ constraint_id = p.createConstraint(parentBodyUniqueId=pendulum,
                                    jointAxis=[0, 0, 0],
                                    parentFramePosition=[0, 0, 0],
                                    childFramePosition=[0, 0, 0])
-
 def is_in_range():
     pendulum_pos, _ = p.getBasePositionAndOrientation(pendulum)
     target_pos, _ = p.getBasePositionAndOrientation(target1)
