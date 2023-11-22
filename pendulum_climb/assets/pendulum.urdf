@@ -29,11 +29,12 @@
         </inertial> 
     </link>
 
-    <joint name="top_joint" type="fixed">
+    <joint name="top_joint" type="continuous">
         <parent link="base_link"/>
         <child link="top_link"/> 
-        <axis xyz="0 0 0"/>
+        <axis xyz="1 0 0"/>
         <origin xyz="0 0 0.5"/>
+        <limit effort="1000" velocity="100" />
     </joint>
 
     <link name="top_link">
@@ -56,11 +57,12 @@
         </inertial> 
     </link>
 
-    <joint name="bottom_joint" type="fixed">
+    <joint name="bottom_joint" type="continuous">
         <parent link="base_link"/>
         <child link="bottom_link"/> 
-        <axis xyz="0 0 0"/>
+        <axis xyz="1 0 0"/>
         <origin xyz="0 0 -0.5"/>
+        <limit effort="1000" velocity="100" />
     </joint>
 
     <link name="bottom_link">

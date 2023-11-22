@@ -26,18 +26,19 @@ pendulum = p.loadURDF(current_directory + "/pendulum_climb/assets/pendulum.urdf"
 # Joint links of pendulum
 pendulum_indices = [0, 1]
 
-directionX = p.addUserDebugParameter('DirectionX', -0.5, 0.5, 0)
-directionY = p.addUserDebugParameter('DirectionY', -0.5, 0.5, 0)
-momentum = p.addUserDebugParameter('Momentum', 0, 200, 0)
+# directionX = p.addUserDebugParameter('DirectionX', -0.5, 0.5, 0)
+# directionY = p.addUserDebugParameter('DirectionY', -0.5, 0.5, 0)
+momentum = p.addUserDebugParameter('Momentum', -200, 200, 0)
 
 p.setRealTimeSimulation(1)
 
 # Test constraint to hold onto the first target
+# JOINT_FIXED is not affected by gravity
 constraint_id = p.createConstraint(parentBodyUniqueId=pendulum,
                                    parentLinkIndex=0,
                                    childBodyUniqueId=target1,
                                    childLinkIndex=-1,
-                                   jointType=p.JOINT_FIXED,
+                                   jointType=p.JOINT_POINT2POINT,
                                    jointAxis=[0, 0, 0],
                                    parentFramePosition=[0, 0, 0],
                                    childFramePosition=[0, 0, 0])
@@ -49,10 +50,15 @@ def is_in_range():
 
 
 while True:
-    user_throttle = p.readUserDebugParameter(momentum)
+    user_momentum = p.readUserDebugParameter(momentum)
 
     # pos, ori = p.getBasePositionAndOrientation(pendulum)
     # p.applyExternalForce(pendulum, 0, [50, 0, 0], pos, p.WORLD_FRAME)
+
+    p.setJointMotorControl2(bodyIndex=pendulum,
+                            jointIndex=0,
+                            controlMode=p.VELOCITY_CONTROL,
+                            targetVelocity=user_momentum)
 
     p.stepSimulation()
     sleep(1.0 / 240)
