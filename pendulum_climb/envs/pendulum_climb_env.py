@@ -85,16 +85,18 @@ class PendulumClimbEnv(gym.Env):
             target = Target(self.client, [0, 0, i * 2 + dist])
             self.targets.append(target)
 
-        self.targets[0].constraint = p.createConstraint(parentBodyUniqueId=self.pendulum.id,
-                                                        parentLinkIndex=0,
-                                                        childBodyUniqueId=self.targets[0].id,
-                                                        childLinkIndex=-1,
-                                                        jointType=p.JOINT_POINT2POINT,
-                                                        jointAxis=[0, 0, 0],
-                                                        parentFramePosition=[0, 0, 0],
-                                                        childFramePosition=[0, 0, 0])
+        initial_constraint = p.createConstraint(parentBodyUniqueId=self.pendulum.id,
+                                                parentLinkIndex=0,
+                                                childBodyUniqueId=self.targets[0].id,
+                                                childLinkIndex=-1,
+                                                jointType=p.JOINT_POINT2POINT,
+                                                jointAxis=[0, 0, 0],
+                                                parentFramePosition=[0, 0, 0],
+                                                childFramePosition=[0, 0, 0])
         self.pendulum.top_held = self.targets[0]
         self.pendulum.targets = self.targets
+        self.pendulum.top_held = initial_constraint
+        self.targets[0].constraint = initial_constraint
 
         goal_pos, _ = p.getBasePositionAndOrientation(self.targets[-1].id, self.client)
         self.goal = goal_pos

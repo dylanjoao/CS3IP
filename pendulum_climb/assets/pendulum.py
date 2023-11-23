@@ -38,11 +38,41 @@ class Pendulum:
                                     jointIndex=self.joints[0],
                                     controlMode=p.VELOCITY_CONTROL,
                                     targetVelocity=action_value)
-        elif action_type == 1:
-            pass
+
+        elif action_type == 1 and self.top_held is None:
+            link_state = p.getLinkState(self.id, 0)
+            target_in_range = None
+
+            for i in range(len(self.targets)):
+                target_pos, _ = p.getBasePositionAndOrientation(self.targets[i].id)
+                distance = np.linalg.norm(np.array(link_state[0]) - np.array(target_pos))
+                if distance < 0.1:
+                    target_in_range = self.targets[i]
+                    break
+
+            if target_in_range is not None:
+                self.create_hold(target_in_range.id)
 
         elif action_type == 2:
-            pass
+            self.remove_hold()
+
+    def remove_hold(self):
+        if self.top_held is not None:
+            p.removeConstraint(self.top_held)
+            self.top_held = None
+
+    def create_hold(self, target):
+        self.remove_hold()
+        constraint = p.createConstraint(parentBodyUniqueId=self.id,
+                                        parentLinkIndex=0,
+                                        childBodyUniqueId=target,
+                                        childLinkIndex=-1,
+                                        jointType=p.JOINT_POINT2POINT,
+                                        jointAxis=[0, 0, 0],
+                                        parentFramePosition=[0, 0, 0],
+                                        childFramePosition=[0, 0, 0])
+
+        self.top_held = constraint
 
     def get_observation(self):
         # Get the position and orientation of the pendulum in the simulation
