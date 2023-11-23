@@ -33,13 +33,13 @@ class Pendulum:
         # 0 = Apply Momentum
         # 1 = Grab
         # 2 = Release
-        if action_type == 0:
+        if round(action_type) == 0:
             p.setJointMotorControl2(bodyIndex=self.id,
                                     jointIndex=self.joints[0],
                                     controlMode=p.VELOCITY_CONTROL,
                                     targetVelocity=action_value)
 
-        elif action_type == 1 and self.top_held is None:
+        elif round(action_type) == 1 and self.top_held is None:
             link_state = p.getLinkState(self.id, 0)
             target_in_range = None
 
@@ -53,7 +53,7 @@ class Pendulum:
             if target_in_range is not None:
                 self.create_hold(target_in_range.id)
 
-        elif action_type == 2:
+        elif round(action_type) == 2:
             self.remove_hold()
 
     def remove_hold(self):

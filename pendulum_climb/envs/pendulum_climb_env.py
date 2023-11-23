@@ -16,6 +16,7 @@ class PendulumClimbEnv(gym.Env):
 
     def __init__(self):
         # Add momentum, grasp, release
+        # This is wrong, if we're switch casing first value it has to be an int
         self.action_space = gym.spaces.box.Box(
             low=np.array([0, -200], dtype=np.float32),
             high=np.array([2, 200], dtype=np.float32))
@@ -34,12 +35,12 @@ class PendulumClimbEnv(gym.Env):
                           dtype=np.float32))
         self.np_random, _ = gym.utils.seeding.np_random()
 
-        self.client = p.connect(p.GUI)
+        self.client = p.connect(p.DIRECT)
 
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
 
         # Reduce length of episodes for RL algorithms
-        p.setTimeStep(1 / 30, self.client)
+        p.setTimeStep(1 / 1, self.client)
 
         self.pendulum = None
         self.goal = None
@@ -65,7 +66,7 @@ class PendulumClimbEnv(gym.Env):
         if dist_to_goal < 0.05:
             self.done = True
             reward = 50
-        elif pen_ob[2] < 0.20 or pen_ob[2] > 50:
+        elif pen_ob[2] < 0.5 or pen_ob[2] > 50:
             self.done = True
 
         ob = np.array(pen_ob + self.goal, dtype=np.float32)
