@@ -50,7 +50,7 @@ class Pendulum:
         vel = p.getBaseVelocity(self.pendulum, self.client)[0][0:2]
 
         # Concatenate position, orientation, velocity
-        # (0.0, 0.0, 1.5, 1.0, 0.0, 0.0, 0.0)
+        # ([0.0, 0.0, 1.5], [1.0, 0.0, 0.0], 0.0)
         observation = (pos + ori + vel)
 
         return observation
