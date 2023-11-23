@@ -8,3 +8,4 @@ class Target:
         self.id = p.loadURDF(fileName=f_name,
                              basePosition=base,
                              physicsClientId=client)
+        self.constraint = None

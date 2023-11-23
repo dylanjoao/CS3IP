@@ -26,7 +26,6 @@ target4 = p.loadURDF(current_directory + "/pendulum_climb/assets/target.urdf", b
 # pendulum = p.loadURDF(current_directory + "/pendulum_climb/assets/pendulum.urdf", basePosition=[0, 0, 1])
 pendulum = Pendulum(client)
 
-
 # Joint links of pendulum
 pendulum_indices = [0, 1]
 
@@ -46,6 +45,8 @@ constraint_id = p.createConstraint(parentBodyUniqueId=pendulum.pendulum,
                                    jointAxis=[0, 0, 0],
                                    parentFramePosition=[0, 0, 0],
                                    childFramePosition=[0, 0, 0])
+
+
 def is_in_range():
     pendulum_pos, _ = p.getBasePositionAndOrientation(pendulum)
     target_pos, _ = p.getBasePositionAndOrientation(target1)
@@ -66,6 +67,5 @@ while True:
 
     p.stepSimulation()
     sleep(1.0 / 240)
-
 
 p.disconnect()
