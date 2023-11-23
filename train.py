@@ -42,12 +42,13 @@ def test(env, sb3_algo, path_to_model):
         print('Algorithm not found')
         return
 
-    obs = env.reset()[0]
+    obs = env.reset()
     done = False
     extra_steps = 500
     while True:
         action, _ = model.predict(obs)
-        obs, _, done, _, _ = env.step(action)
+        obs, reward, done, _ = env.step(action)
+        print(action)
 
         if done:
             extra_steps -= 1

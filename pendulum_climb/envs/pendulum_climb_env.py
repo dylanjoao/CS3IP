@@ -35,12 +35,12 @@ class PendulumClimbEnv(gym.Env):
                           dtype=np.float32))
         self.np_random, _ = gym.utils.seeding.np_random()
 
-        self.client = p.connect(p.DIRECT)
+        self.client = p.connect(p.GUI)
 
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
 
         # Reduce length of episodes for RL algorithms
-        p.setTimeStep(1 / 1, self.client)
+        p.setTimeStep(1 / 30, self.client)
 
         self.pendulum = None
         self.goal = None
@@ -66,7 +66,7 @@ class PendulumClimbEnv(gym.Env):
         if dist_to_goal < 0.05:
             self.done = True
             reward = 50
-        elif pen_ob[2] < 0.5 or pen_ob[2] > 50:
+        elif pen_ob[2] < 0.8 or pen_ob[2] > 50:
             self.done = True
 
         ob = np.array(pen_ob + self.goal, dtype=np.float32)

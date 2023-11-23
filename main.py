@@ -6,12 +6,11 @@ env = gym.make('PendulumClimb-v0')
 ob = env.reset()
 while True:
     action = env.action_space.sample()
-    ob, reward, done, _ = env.step(action)
+    ob, reward, done, _ = env.step([1, 0])
     env.render()
     if done:
         ob = env.reset()
 
-    print(action)
 
 
     time.sleep(1.0 / 240.0)
