@@ -62,6 +62,12 @@ class PendulumClimbEnv(gym.Env):
         reward = max(self.prev_dist_to_goal - dist_to_goal, 0)
         self.prev_dist_to_goal = dist_to_goal
 
+        if dist_to_goal < 0.05:
+            self.done = True
+            reward = 50
+        elif pen_ob[2] < 0.20 or pen_ob[2] > 50:
+            self.done = True
+
         ob = np.array(pen_ob + self.goal, dtype=np.float32)
         return ob, reward, self.done, dict()
 
