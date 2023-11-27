@@ -30,17 +30,16 @@ class PendulumClimbEnv(gym.Env):
         self.np_random, _ = gym.utils.seeding.np_random()
 
         self.client = p.connect(p.GUI)
-
-        p.setAdditionalSearchPath(pybullet_data.getDataPath())
-
-        # Reduce length of episodes for RL algorithms
-        p.setTimeStep(1 / 30, self.client)
-
         self.pendulum = None
         self.pendulum_pos = []
         self.goal = None
         self.initial_dist = None
         self.targets = []
+
+        p.setAdditionalSearchPath(pybullet_data.getDataPath())
+
+        # Reduce length of episodes for RL algorithms
+        p.setTimeStep(1 / 30, self.client)
 
     def _get_obs(self):
         pen_ob = self.pendulum.get_observation()
@@ -61,17 +60,20 @@ class PendulumClimbEnv(gym.Env):
         ob = self._get_obs()
         info = self._get_info()
 
-        self.pendulum_pos = ob["agent_position"]
+        agent_position = ob["agent_position"]
 
-        dist_to_goal = np.linalg.norm(np.array(ob["agent_position"]) - np.array(self.goal))
+        self.pendulum_pos = agent_position
 
-        reward = self.initial_dist / dist_to_goal
+        dist_to_goal = np.linalg.norm(np.array(agent_position) - np.array(self.goal))
+
+        # Quadratic reward
+        reward = (self.initial_dist / dist_to_goal)**2
 
         terminated = False
         if dist_to_goal < 0.05:
             terminated = True
             reward = 50
-        elif ob["agent_position"][2] < 0.8 or ob["agent_position"][2] > 50:
+        elif agent_position[2] < 0.8 or agent_position[2] > 50:
             terminated = True
 
         return ob, reward, terminated, False, info
@@ -88,13 +90,13 @@ class PendulumClimbEnv(gym.Env):
 
         # Reload the plane and car
         plane = p.loadURDF("plane.urdf")
-        self.pendulum = Pendulum(self.client, [0, 0, 1.5])
+        self.pendulum = Pendulum(self.client, [0, 0, 2.5])
         self.targets.clear()
 
         # Targets equally apart
-        dist = 2
+        dist = 1.0
         for i in range(4):
-            target = Target(self.client, [0, 0, i * 2 + dist])
+            target = Target(self.client, [0, 0, i+1 * 2 + dist])
             self.targets.append(target)
 
         initial_constraint = p.createConstraint(parentBodyUniqueId=self.pendulum.id,
@@ -115,9 +117,10 @@ class PendulumClimbEnv(gym.Env):
 
         # Get observation to return
         ob = self._get_obs()
+        agent_position = ob["agent_position"]
 
-        self.pendulum_pos = ob["agent_position"]
-        self.initial_dist = np.linalg.norm(np.array(ob["agent_position"]) - np.array(goal_pos))
+        self.pendulum_pos = agent_position
+        self.initial_dist = np.linalg.norm(np.array(agent_position) - np.array(goal_pos))
 
         info = self._get_info()
 

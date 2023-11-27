@@ -1,16 +1,25 @@
+import random
+
 import gymnasium as gym
 import pendulum_climb
 import time
 
-gymenv = gym.make('PendulumClimb-v0')
-env = gym.wrappers.FlattenObservation(gymenv)
+env = gym.make('PendulumClimb-v0')
 ob, info = env.reset(seed=42)
-while True:
-    action = env.action_space.sample()
-    ob, reward, done, _, info = env.step(1)
 
-    env.render()
-    if done:
-        ob, info = env.reset()
+episode = 10
+for episode in range(1, episode + 1):
+    state = env.reset()
+    done = False
+    score = 0
 
-    time.sleep(1.0 / 240.0)
+    while not done:
+        action = env.action_space.sample()
+        ob, reward, done, _, info = env.step(action)
+        score += reward
+        env.render()
+        time.sleep(1 / 240)
+
+    print(f"Episode {episode}, Score: {score}")
+
+env.close()

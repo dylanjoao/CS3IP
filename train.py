@@ -75,21 +75,38 @@ def test(env, sb3_algo, path_to_model):
         print('Algorithm not found')
         return
 
-    obs = env.reset()
-    done = False
-    extra_steps = 500
-    while True:
-        action, _ = model.predict(obs)
-        obs, reward, done, _, info = env.step(action)
-        print(action)
+    # obs, info = env.reset()
+    # done = False
+    # extra_steps = 500
+    # while True:
+    #     action, _ = model.predict(obs)
+    #     obs, reward, done, _, info = env.step(action)
+    #     print(action)
 
-        if done:
-            extra_steps -= 1
+    #     if done:
+    #         extra_steps -= 1
 
-            if extra_steps < 0:
-                break
+    #         if extra_steps < 0:
+    #             break
 
-        time.sleep(1.0 / 240.0)
+    #     time.sleep(1.0 / 240.0)
+
+    episode = 10
+    for episode in range(1, episode + 1):
+        obs, info = env.reset()
+        done = False
+        score = 0
+
+        while not done:
+            action,_ = model.predict(obs)
+            obs, reward, done, _, info = env.step(action)
+            score += reward
+            env.render()
+            time.sleep(1 / 240)
+
+        print(f"Episode {episode}, Score: {score}")
+
+    env.close()
 
 
 if __name__ == '__main__':
@@ -105,18 +122,21 @@ if __name__ == '__main__':
 
     if args.train:
         gymenv = gym.make(args.gymenv)
-        train(gymenv, args.sb3_algo)
+        env = FlattenObservation(gymenv)
+        train(env, args.sb3_algo)
 
     if args.test:
         if os.path.isfile(args.test):
             gymenv = gym.make(args.gymenv)
-            test(gymenv, args.sb3_algo, path_to_model=args.test)
+            env = FlattenObservation(gymenv)
+            test(env, args.sb3_algo, path_to_model=args.test)
         else:
             print(f'{args.test} not found.')
 
     if args.cont:
         if os.path.isfile(args.cont):
             gymenv = gym.make(args.gymenv)
-            cont_train(gymenv, args.sb3_algo, path_to_model=args.cont)
+            env = FlattenObservation(gymenv)
+            cont_train(env, args.sb3_algo, path_to_model=args.cont)
         else:
             print(f'{args.cont} not found.')
