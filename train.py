@@ -1,5 +1,6 @@
 import time
-import gym
+import gymnasium as gym
+from gymnasium.wrappers import FlattenObservation
 import stable_baselines3 as sb
 import os
 import argparse
@@ -79,7 +80,7 @@ def test(env, sb3_algo, path_to_model):
     extra_steps = 500
     while True:
         action, _ = model.predict(obs)
-        obs, reward, done, _ = env.step(action)
+        obs, reward, done, _, info = env.step(action)
         print(action)
 
         if done:

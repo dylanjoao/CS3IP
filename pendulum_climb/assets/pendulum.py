@@ -36,13 +36,13 @@ class Pendulum:
             p.setJointMotorControl2(bodyIndex=self.id,
                                     jointIndex=self.joints[0],
                                     controlMode=p.VELOCITY_CONTROL,
-                                    targetVelocity=100.0)
+                                    targetVelocity=150.0)
 
         elif action == 1:
             p.setJointMotorControl2(bodyIndex=self.id,
                                     jointIndex=self.joints[0],
                                     controlMode=p.VELOCITY_CONTROL,
-                                    targetVelocity=-100.0)
+                                    targetVelocity=-150.0)
 
         elif action == 2 and self.top_held is None:
             link_state = p.getLinkState(self.id, 0)
@@ -89,7 +89,6 @@ class Pendulum:
 
         # Concatenate position, orientation, velocity
         # ([0.0, 0.0, 1.5], [1.0, 0.0, 0.0], [0.0, 0.0, 0.0])
-        observation = (pos + ang + vel)
-
+        observation = {"pos": pos, "ang": ang, "vel": vel}
 
         return observation

@@ -1,7 +1,7 @@
 import os
 from time import sleep
 
-import gym
+import gymnasium as gym
 import numpy as np
 import math
 import pybullet as p
@@ -18,18 +18,15 @@ class PendulumClimbEnv(gym.Env):
         # +vel, -vel, grasp, release
         self.action_space = gym.spaces.Discrete(4)
 
-        # position[3], orientation[3], velocity[3], goal[3]
-        self.observation_space = gym.spaces.box.Box(
-            low=np.array([-float('inf'), -float('inf'), -float('inf'),
-                          -float('inf'), -float('inf'), -float('inf'),
-                          -float('inf'), -float('inf'), -float('inf'),
-                          -float('inf'), -float('inf'), -float('inf')],
-                         dtype=np.float32),
-            high=np.array([float('inf'), float('inf'), float('inf'),
-                           float('inf'), float('inf'), float('inf'),
-                           float('inf'), float('inf'), float('inf'),
-                           float('inf'), float('inf'), float('inf')],
-                          dtype=np.float32))
+        self.observation_space = gym.spaces.Dict(
+            {
+                "agent_position": gym.spaces.Box(low=-float('inf'), high=float('inf'), shape=(3,), dtype=np.float32),
+                "agent_angle": gym.spaces.Box(low=-float('inf'), high=float('inf'), shape=(3,), dtype=np.float32),
+                "agent_velocity": gym.spaces.Box(low=-float('inf'), high=float('inf'), shape=(3,), dtype=np.float32),
+                "target_position": gym.spaces.Box(low=-float('inf'), high=float('inf'), shape=(3,), dtype=np.float32)
+            }
+        )
+
         self.np_random, _ = gym.utils.seeding.np_random()
 
         self.client = p.connect(p.GUI)
@@ -40,48 +37,58 @@ class PendulumClimbEnv(gym.Env):
         p.setTimeStep(1 / 30, self.client)
 
         self.pendulum = None
+        self.pendulum_pos = []
         self.goal = None
-        self.done = False
         self.initial_dist = None
         self.targets = []
 
-        self.reset()
+    def _get_obs(self):
+        pen_ob = self.pendulum.get_observation()
+
+        return {"agent_position": pen_ob["pos"],
+                "agent_angle": pen_ob["ang"],
+                "agent_velocity": pen_ob["vel"],
+                "target_position": self.goal}
+
+    def _get_info(self):
+        return {"distance:": np.linalg.norm(np.array(self.pendulum_pos) - np.array(self.goal))}
 
     def step(self, action):
         # Feed action to the pendulum and get observation of pendulum's state
         self.pendulum.apply_action(action)
         p.stepSimulation()
 
-        pen_ob = self.pendulum.get_observation()
+        ob = self._get_obs()
+        info = self._get_info()
 
-        # Shouldn't this be retrieving from the state? feels kind of hacky
-        dist_to_goal = math.sqrt(((pen_ob[0] - self.goal[0]) ** 2 +
-                                  (pen_ob[1] - self.goal[1]) ** 2 +
-                                  (pen_ob[2] - self.goal[2]) ** 2))
+        self.pendulum_pos = ob["agent_position"]
 
-        reward = self.initial_dist/dist_to_goal
+        dist_to_goal = np.linalg.norm(np.array(ob["agent_position"]) - np.array(self.goal))
 
+        reward = self.initial_dist / dist_to_goal
+
+        terminated = False
         if dist_to_goal < 0.05:
-            self.done = True
+            terminated = True
             reward = 50
-        elif pen_ob[2] < 0.8 or pen_ob[2] > 50:
-            self.done = True
+        elif ob["agent_position"][2] < 0.8 or ob["agent_position"][2] > 50:
+            terminated = True
 
-        ob = np.array(pen_ob + self.goal, dtype=np.float32)
-        return ob, reward, self.done, dict()
+        return ob, reward, terminated, False, info
 
     def seed(self, seed=None):
         self.np_random, seed = gym.utils.seeding.np_random(seed)
         return [seed]
 
-    def reset(self):
+    def reset(self, seed=None, options=None):
+        super().reset(seed=seed)
+
         p.resetSimulation(self.client)
         p.setGravity(0, 0, -10)
 
         # Reload the plane and car
         plane = p.loadURDF("plane.urdf")
         self.pendulum = Pendulum(self.client, [0, 0, 1.5])
-        self.done = False
         self.targets.clear()
 
         # Targets equally apart
@@ -107,13 +114,14 @@ class PendulumClimbEnv(gym.Env):
         self.goal = goal_pos
 
         # Get observation to return
-        ob = self.pendulum.get_observation()
+        ob = self._get_obs()
 
-        self.initial_dist = math.sqrt(((ob[0] - self.goal[0]) ** 2 +
-                                       (ob[1] - self.goal[1]) ** 2 +
-                                       (ob[2] - self.goal[2]) ** 2))
+        self.pendulum_pos = ob["agent_position"]
+        self.initial_dist = np.linalg.norm(np.array(ob["agent_position"]) - np.array(goal_pos))
 
-        return np.array(ob + self.goal, dtype=np.float32)
+        info = self._get_info()
+
+        return ob, info
 
     def render(self, mode='human'):
         pass
