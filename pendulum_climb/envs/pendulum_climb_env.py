@@ -15,22 +15,19 @@ class PendulumClimbEnv(gym.Env):
     metadata = {'render.modes': ['human']}
 
     def __init__(self):
-        # Add momentum, grasp, release
-        # This is wrong, if we're switch casing first value it has to be an int
-        self.action_space = gym.spaces.box.Box(
-            low=np.array([0, -200], dtype=np.float32),
-            high=np.array([2, 200], dtype=np.float32))
+        # +vel, -vel, grasp, release
+        self.action_space = gym.spaces.Discrete(4)
 
-        # position[3], orientation[3], velocity, goal[3]
+        # position[3], orientation[3], velocity[3], goal[3]
         self.observation_space = gym.spaces.box.Box(
             low=np.array([-float('inf'), -float('inf'), -float('inf'),
                           -float('inf'), -float('inf'), -float('inf'),
-                          -float('inf'),
+                          -float('inf'), -float('inf'), -float('inf'),
                           -float('inf'), -float('inf'), -float('inf')],
                          dtype=np.float32),
             high=np.array([float('inf'), float('inf'), float('inf'),
                            float('inf'), float('inf'), float('inf'),
-                           float('inf'),
+                           float('inf'), float('inf'), float('inf'),
                            float('inf'), float('inf'), float('inf')],
                           dtype=np.float32))
         self.np_random, _ = gym.utils.seeding.np_random()
@@ -45,7 +42,7 @@ class PendulumClimbEnv(gym.Env):
         self.pendulum = None
         self.goal = None
         self.done = False
-        self.prev_dist_to_goal = None
+        self.initial_dist = None
         self.targets = []
 
         self.reset()
@@ -54,14 +51,15 @@ class PendulumClimbEnv(gym.Env):
         # Feed action to the pendulum and get observation of pendulum's state
         self.pendulum.apply_action(action)
         p.stepSimulation()
+
         pen_ob = self.pendulum.get_observation()
 
+        # Shouldn't this be retrieving from the state? feels kind of hacky
         dist_to_goal = math.sqrt(((pen_ob[0] - self.goal[0]) ** 2 +
                                   (pen_ob[1] - self.goal[1]) ** 2 +
                                   (pen_ob[2] - self.goal[2]) ** 2))
 
-        reward = max(self.prev_dist_to_goal - dist_to_goal, 0)
-        self.prev_dist_to_goal = dist_to_goal
+        reward = self.initial_dist/dist_to_goal
 
         if dist_to_goal < 0.05:
             self.done = True
@@ -82,7 +80,7 @@ class PendulumClimbEnv(gym.Env):
 
         # Reload the plane and car
         plane = p.loadURDF("plane.urdf")
-        self.pendulum = Pendulum(self.client)
+        self.pendulum = Pendulum(self.client, [0, 0, 1.5])
         self.done = False
         self.targets.clear()
 
@@ -111,14 +109,15 @@ class PendulumClimbEnv(gym.Env):
         # Get observation to return
         ob = self.pendulum.get_observation()
 
-        self.prev_dist_to_goal = math.sqrt(((ob[0] - self.goal[0]) ** 2 +
-                                            (ob[1] - self.goal[1]) ** 2 +
-                                            (ob[2] - self.goal[2]) ** 2))
+        self.initial_dist = math.sqrt(((ob[0] - self.goal[0]) ** 2 +
+                                       (ob[1] - self.goal[1]) ** 2 +
+                                       (ob[2] - self.goal[2]) ** 2))
 
         return np.array(ob + self.goal, dtype=np.float32)
 
     def render(self, mode='human'):
         pass
+        # self.client = p.connect(p.DIRECT)
 
     def close(self):
         p.disconnect(self.client)

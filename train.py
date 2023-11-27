@@ -1,5 +1,6 @@
+import time
 import gym
-from stable_baselines3 import SAC, TD3, A2C
+import stable_baselines3 as sb
 import os
 import argparse
 import pendulum_climb
@@ -13,11 +14,15 @@ os.makedirs(log_dir, exist_ok=True)
 
 def train(env, sb3_algo):
     if sb3_algo == 'SAC':
-        model = SAC('MlpPolicy', env, verbose=1, device='cuda', tensorboard_log=log_dir)
+        model = sb.SAC('MlpPolicy', env, verbose=1, device='cuda', tensorboard_log=log_dir)
     elif sb3_algo == 'TD3':
-        model = TD3('MlpPolicy', env, verbose=1, device='cuda', tensorboard_log=log_dir)
+        model = sb.TD3('MlpPolicy', env, verbose=1, device='cuda', tensorboard_log=log_dir)
     elif sb3_algo == 'A2C':
-        model = A2C('MlpPolicy', env, verbose=1, device='cuda', tensorboard_log=log_dir)
+        model = sb.A2C('MlpPolicy', env, verbose=1, device='cuda', tensorboard_log=log_dir)
+    elif sb3_algo == 'DQN':
+        model = sb.DQN('MlpPolicy', env, verbose=1, device='cuda', tensorboard_log=log_dir)
+    elif sb3_algo == 'PPO':
+        model = sb.PPO('MlpPolicy', env, verbose=1, device='cuda', tensorboard_log=log_dir)        
     else:
         print('Algorithm not found')
         return
@@ -31,13 +36,40 @@ def train(env, sb3_algo):
         model.save(f"{model_dir}/{sb3_algo}_{TIMESTEPS * iters}")
 
 
+def cont_train(env, sb3_algo, path_to_model):
+    if sb3_algo == 'SAC':
+        model = sb.SAC.load(path_to_model, env=env)
+    elif sb3_algo == 'TD3':
+        model = sb.TD3.load(path_to_model, env=env)
+    elif sb3_algo == 'A2C':
+        model = sb.A2C.load(path_to_model, env=env)
+    elif sb3_algo == 'DQN':
+        model = sb.DQN.load(path_to_model, env=env)
+    elif sb3_algo == 'PPO':
+        model = sb.PPO.load(path_to_model, env=env)
+    else:
+        print('Algorithm not found')
+        return
+    
+    TIMESTEPS = 1000
+    iters = 0
+    while True:
+        iters += 1
+
+        model.learn(total_timesteps=TIMESTEPS, reset_num_timesteps=False)
+        model.save(f"{model_dir}/{sb3_algo}_c_{TIMESTEPS * iters}")
+
 def test(env, sb3_algo, path_to_model):
     if sb3_algo == 'SAC':
-        model = SAC.load(path_to_model, env=env)
+        model = sb.SAC.load(path_to_model, env=env)
     elif sb3_algo == 'TD3':
-        model = TD3.load(path_to_model, env=env)
+        model = sb.TD3.load(path_to_model, env=env)
     elif sb3_algo == 'A2C':
-        model = A2C.load(path_to_model, env=env)
+        model = sb.A2C.load(path_to_model, env=env)
+    elif sb3_algo == 'DQN':
+        model = sb.DQN.load(path_to_model, env=env)
+    elif sb3_algo == 'PPO':
+        model = sb.PPO.load(path_to_model, env=env)
     else:
         print('Algorithm not found')
         return
@@ -56,6 +88,8 @@ def test(env, sb3_algo, path_to_model):
             if extra_steps < 0:
                 break
 
+        time.sleep(1.0 / 240.0)
+
 
 if __name__ == '__main__':
 
@@ -65,6 +99,7 @@ if __name__ == '__main__':
     parser.add_argument('sb3_algo', help='StableBaseline3 RL algorithm i.e. SAC, TD3')
     parser.add_argument('-t', '--train', action='store_true')
     parser.add_argument('-s', '--test', metavar='path_to_model')
+    parser.add_argument('-c', '--cont', metavar='path_to_model')
     args = parser.parse_args()
 
     if args.train:
@@ -77,3 +112,10 @@ if __name__ == '__main__':
             test(gymenv, args.sb3_algo, path_to_model=args.test)
         else:
             print(f'{args.test} not found.')
+
+    if args.cont:
+        if os.path.isfile(args.cont):
+            gymenv = gym.make(args.gymenv)
+            cont_train(gymenv, args.sb3_algo, path_to_model=args.cont)
+        else:
+            print(f'{args.cont} not found.')

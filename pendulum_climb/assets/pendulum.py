@@ -5,11 +5,11 @@ import math
 
 
 class Pendulum:
-    def __init__(self, client):
+    def __init__(self, client, pos):
         self.client = client
         f_name = os.path.join(os.path.dirname(__file__), 'pendulum.urdf')
         self.id = p.loadURDF(fileName=f_name,
-                             basePosition=[0, 0, 1],
+                             basePosition=pos,
                              physicsClientId=client)
 
         # Joint indices as found by p.getJointInfo()
@@ -27,19 +27,24 @@ class Pendulum:
         return self.id, self.client
 
     def apply_action(self, action):
-        # E.g. action_type 0 == add momentum, action_value = -20
-        action_type, action_value = action
 
-        # 0 = Apply Momentum
-        # 1 = Grab
-        # 2 = Release
-        if round(action_type) == 0:
+        # 0 = +Vel
+        # 1 = -Vel
+        # 2 = Grab
+        # 3 = Release
+        if action == 0:
             p.setJointMotorControl2(bodyIndex=self.id,
                                     jointIndex=self.joints[0],
                                     controlMode=p.VELOCITY_CONTROL,
-                                    targetVelocity=action_value)
+                                    targetVelocity=100.0)
 
-        elif round(action_type) == 1 and self.top_held is None:
+        elif action == 1:
+            p.setJointMotorControl2(bodyIndex=self.id,
+                                    jointIndex=self.joints[0],
+                                    controlMode=p.VELOCITY_CONTROL,
+                                    targetVelocity=-100.0)
+
+        elif action == 2 and self.top_held is None:
             link_state = p.getLinkState(self.id, 0)
             target_in_range = None
 
@@ -53,7 +58,7 @@ class Pendulum:
             if target_in_range is not None:
                 self.create_hold(target_in_range.id)
 
-        elif round(action_type) == 2:
+        elif action == 3:
             self.remove_hold()
 
     def remove_hold(self):
@@ -78,13 +83,13 @@ class Pendulum:
         # Get the position and orientation of the pendulum in the simulation
         pos, ang = p.getBasePositionAndOrientation(self.id, self.client)
         ang = p.getEulerFromQuaternion(ang)
-        ori = (math.cos(ang[2]), math.sin(ang[2]))
 
         # Get the velocity of the pendulum
-        vel = p.getBaseVelocity(self.id, self.client)[0][0:2]
+        vel = p.getBaseVelocity(self.id, self.client)[0]
 
         # Concatenate position, orientation, velocity
-        # ([0.0, 0.0, 1.5], [1.0, 0.0, 0.0], 0.0)
-        observation = (pos + ori + vel)
+        # ([0.0, 0.0, 1.5], [1.0, 0.0, 0.0], [0.0, 0.0, 0.0])
+        observation = (pos + ang + vel)
+
 
         return observation
