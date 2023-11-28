@@ -36,9 +36,14 @@ class PendulumClimbEnv(gym.Env):
         self.goal = None
         self.initial_dist = None
         self.targets = []
+        self._max_episode_steps = 1000
+        self._elapsed_steps = 0
 
+        # configure pybullet GUI
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
+        p.resetDebugVisualizerCamera(cameraDistance=10, cameraYaw=90, cameraPitch=0,
+                                     cameraTargetPosition=[0, 0, 5])
 
         # Reduce length of episodes for RL algorithms
         p.setTimeStep(1 / 30, self.client)
@@ -58,28 +63,35 @@ class PendulumClimbEnv(gym.Env):
     def step(self, action):
         # Feed action to the pendulum and get observation of pendulum's state
         self.pendulum.apply_action(action)
+
         p.stepSimulation()
 
+        # Gather information about the env
         ob = self._get_obs()
         info = self._get_info()
 
+        # Update values
         agent_position = ob["agent_position"]
-
+        dist_to_goal = np.linalg.norm(np.array(agent_position) - np.array(self.goal))
         self.pendulum_pos = agent_position
 
-        dist_to_goal = np.linalg.norm(np.array(agent_position) - np.array(self.goal))
-
         # Quadratic reward
-        reward = (self.initial_dist / dist_to_goal)**2
+        reward = (self.initial_dist / dist_to_goal) ** 2
 
+        # Check termination conditions
         terminated = False
+        truncated = False
         if dist_to_goal < 0.05:
             terminated = True
             reward = 50
         elif agent_position[2] < 0.8 or agent_position[2] > 50:
             terminated = True
 
-        return ob, reward, terminated, False, info
+        if self._elapsed_steps >= self._max_episode_steps:
+            truncated = True
+        self._elapsed_steps += 1
+
+        return ob, reward, terminated, truncated, info
 
     def seed(self, seed=None):
         self.np_random, seed = gym.utils.seeding.np_random(seed)
@@ -98,8 +110,8 @@ class PendulumClimbEnv(gym.Env):
 
         # Targets equally apart
         dist = 1.0
-        for i in range(4):
-            target = Target(self.client, [0, 0, i+1 * 2 + dist])
+        for i in range(10):
+            target = Target(self.client, [0, 0, i + 1 * 2 + dist])
             self.targets.append(target)
 
         initial_constraint = p.createConstraint(parentBodyUniqueId=self.pendulum.id,
@@ -124,6 +136,7 @@ class PendulumClimbEnv(gym.Env):
 
         self.pendulum_pos = agent_position
         self.initial_dist = np.linalg.norm(np.array(agent_position) - np.array(goal_pos))
+        self._elapsed_steps = 0
 
         info = self._get_info()
 

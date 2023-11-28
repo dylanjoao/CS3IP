@@ -11,15 +11,18 @@ episode = 10
 for episode in range(1, episode + 1):
     state = env.reset()
     done = False
+    truncated = False
     score = 0
+    step = 0
 
-    while not done:
+    while not done and not truncated:
         action = env.action_space.sample()
-        ob, reward, done, _, info = env.step(action)
+        ob, reward, done, truncated, info = env.step(1)
         score += reward
+        step += 1
         env.render()
         time.sleep(1 / 240)
 
-    print(f"Episode {episode}, Score: {score}")
+    print(f"Episode {episode}, Score: {score}, Steps {step}")
 
 env.close()
