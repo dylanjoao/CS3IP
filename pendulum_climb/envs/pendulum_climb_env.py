@@ -16,13 +16,14 @@ class PendulumClimbEnv(gym.Env):
 
     def __init__(self):
         # +vel, -vel, grasp, release
-        self.action_space = gym.spaces.Discrete(4)
+        self.action_space = gym.spaces.Discrete(8)
 
         self.observation_space = gym.spaces.Dict(
             {
                 "agent_position": gym.spaces.Box(low=-float('inf'), high=float('inf'), shape=(3,), dtype=np.float32),
                 "agent_angle": gym.spaces.Box(low=-float('inf'), high=float('inf'), shape=(3,), dtype=np.float32),
                 "agent_velocity": gym.spaces.Box(low=-float('inf'), high=float('inf'), shape=(3,), dtype=np.float32),
+                "agent_holds": gym.spaces.Box(low=0, high=1, shape=(2,), dtype=np.integer),
                 "target_position": gym.spaces.Box(low=-float('inf'), high=float('inf'), shape=(3,), dtype=np.float32)
             }
         )
@@ -37,6 +38,7 @@ class PendulumClimbEnv(gym.Env):
         self.targets = []
 
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
+        p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
 
         # Reduce length of episodes for RL algorithms
         p.setTimeStep(1 / 30, self.client)
@@ -47,6 +49,7 @@ class PendulumClimbEnv(gym.Env):
         return {"agent_position": pen_ob["pos"],
                 "agent_angle": pen_ob["ang"],
                 "agent_velocity": pen_ob["vel"],
+                "agent_holds": pen_ob["hold"],
                 "target_position": self.goal}
 
     def _get_info(self):
