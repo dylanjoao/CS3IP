@@ -17,7 +17,7 @@ for episode in range(1, episode + 1):
 
     while not done and not truncated:
         action = env.action_space.sample()
-        ob, reward, done, truncated, info = env.step(1)
+        obs, reward, done, truncated, info = env.step(action)
         score += reward
         step += 1
         env.render()

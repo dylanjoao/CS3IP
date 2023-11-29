@@ -62,7 +62,7 @@ class Pendulum:
             if in_range is not None:
                 self.create_hold(joint, in_range.id)
 
-        elif action == 3:
+        elif action == 3 or action == 7:
             self.remove_hold(joint)
 
     def target_in_range(self, joint):
@@ -118,11 +118,10 @@ class Pendulum:
         # Get the velocity of the pendulum
         vel = p.getBaseVelocity(self.id, self.client)[0]
 
-        holds = ([0 if self.top_held is None else 1] +
-                 [0 if self.bottom_hold is None else 1])
+        holds = [0 if self.top_held is None else 1] + [0 if self.bottom_hold is None else 1]
 
-        # Concatenate position, orientation, velocity, holds
-        # ([0.0, 0.0, 1.5], [1.0, 0.0, 0.0], [0.0, 0.0, 0.0], [1, 0])
-        observation = {"pos": pos, "ang": ang, "vel": vel, "hold": holds}
+        # Concatenate holds[2], position[3], angle[3], velocity[3]
+        # ([1, 0], [0.0, 0.0, 1.5], [1.0, 0.0, 0.0], [0.0, 0.0, 0.0])
+        observation = np.concatenate((holds, pos, ang, vel), dtype=np.float32)
 
         return observation

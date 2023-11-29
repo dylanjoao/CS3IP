@@ -15,26 +15,23 @@ class PendulumClimbEnv(gym.Env):
     metadata = {'render.modes': ['human']}
 
     def __init__(self):
+
+        self.client = p.connect(p.DIRECT)
+
         # +vel, -vel, grasp, release
         self.action_space = gym.spaces.Discrete(8)
 
-        self.observation_space = gym.spaces.Dict(
-            {
-                "agent_position": gym.spaces.Box(low=-float('inf'), high=float('inf'), shape=(3,), dtype=np.float32),
-                "agent_angle": gym.spaces.Box(low=-float('inf'), high=float('inf'), shape=(3,), dtype=np.float32),
-                "agent_velocity": gym.spaces.Box(low=-float('inf'), high=float('inf'), shape=(3,), dtype=np.float32),
-                "agent_holds": gym.spaces.Box(low=0, high=1, shape=(2,), dtype=np.integer),
-                "target_position": gym.spaces.Box(low=-float('inf'), high=float('inf'), shape=(3,), dtype=np.float32)
-            }
-        )
+        # Holds[2], Position[3], Angle[3], Velocity[3], Distance[1]
+        self.observation_space = gym.spaces.Box(low=-float('inf'), high=float('inf'), shape=(12,), dtype=np.float32)
 
         self.np_random, _ = gym.utils.seeding.np_random()
 
-        self.client = p.connect(p.GUI)
         self.pendulum = None
         self.pendulum_pos = []
         self.goal = None
         self.initial_dist = None
+        self.prev_dist = None
+        self.current_distance = None
         self.targets = []
         self._max_episode_steps = 1000
         self._elapsed_steps = 0
@@ -42,20 +39,16 @@ class PendulumClimbEnv(gym.Env):
         # configure pybullet GUI
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
-        p.resetDebugVisualizerCamera(cameraDistance=10, cameraYaw=90, cameraPitch=0,
-                                     cameraTargetPosition=[0, 0, 5])
-
-        # Reduce length of episodes for RL algorithms
+        p.resetDebugVisualizerCamera(cameraDistance=10, cameraYaw=90, cameraPitch=0, cameraTargetPosition=[0, 0, 5])
         p.setTimeStep(1 / 30, self.client)
 
     def _get_obs(self):
         pen_ob = self.pendulum.get_observation()
+        agent_position = pen_ob[2:5]
+        self.pendulum_pos = agent_position
+        self.current_distance = np.linalg.norm(np.array(agent_position) - np.array(self.goal))
 
-        return {"agent_position": pen_ob["pos"],
-                "agent_angle": pen_ob["ang"],
-                "agent_velocity": pen_ob["vel"],
-                "agent_holds": pen_ob["hold"],
-                "target_position": self.goal}
+        return np.concatenate((pen_ob, [self.current_distance]), dtype=np.float32)
 
     def _get_info(self):
         return {"distance:": np.linalg.norm(np.array(self.pendulum_pos) - np.array(self.goal))}
@@ -70,26 +63,26 @@ class PendulumClimbEnv(gym.Env):
         ob = self._get_obs()
         info = self._get_info()
 
-        # Update values
-        agent_position = ob["agent_position"]
-        dist_to_goal = np.linalg.norm(np.array(agent_position) - np.array(self.goal))
-        self.pendulum_pos = agent_position
-
         # Quadratic reward
-        reward = (self.initial_dist / dist_to_goal) ** 2
+        reward = ((self.initial_dist / self.current_distance) ** 2) / 100
 
         # Check termination conditions
         terminated = False
         truncated = False
-        if dist_to_goal < 0.05:
+
+        if self.prev_dist + 0.05 < self.current_distance:
+            terminated = True
+        if self.current_distance < 0.05:
             terminated = True
             reward = 50
-        elif agent_position[2] < 0.8 or agent_position[2] > 50:
+        elif self.pendulum_pos[2] < 0.8 or self.pendulum_pos[2] > 50:
             terminated = True
 
         if self._elapsed_steps >= self._max_episode_steps:
             truncated = True
         self._elapsed_steps += 1
+
+        self.prev_dist = self.current_distance
 
         return ob, reward, terminated, truncated, info
 
@@ -132,10 +125,12 @@ class PendulumClimbEnv(gym.Env):
 
         # Get observation to return
         ob = self._get_obs()
-        agent_position = ob["agent_position"]
+        agent_position = ob[2:5]
 
         self.pendulum_pos = agent_position
         self.initial_dist = np.linalg.norm(np.array(agent_position) - np.array(goal_pos))
+        self.current_distance = self.initial_dist
+        self.prev_dist = self.current_distance
         self._elapsed_steps = 0
 
         info = self._get_info()

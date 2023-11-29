@@ -52,7 +52,7 @@ def cont_train(env, sb3_algo, path_to_model):
         print('Algorithm not found')
         return
     
-    TIMESTEPS = 1000
+    TIMESTEPS = 25000
     iters = 0
     while True:
         iters += 1
@@ -75,34 +75,20 @@ def test(env, sb3_algo, path_to_model):
         print('Algorithm not found')
         return
 
-    # obs, info = env.reset()
-    # done = False
-    # extra_steps = 500
-    # while True:
-    #     action, _ = model.predict(obs)
-    #     obs, reward, done, _, info = env.step(action)
-    #     print(action)
-
-    #     if done:
-    #         extra_steps -= 1
-
-    #         if extra_steps < 0:
-    #             break
-
-    #     time.sleep(1.0 / 240.0)
-
     episode = 10
     for episode in range(1, episode + 1):
         obs, info = env.reset()
         done = False
+        truncated = False
         score = 0
 
-        while not done:
+        while not done and not truncated:
             action,_ = model.predict(obs)
-            obs, reward, done, _, info = env.step(action)
+            obs, reward, done, truncated, info = env.step(action)
             score += reward
             env.render()
             time.sleep(1 / 240)
+            
 
         print(f"Episode {episode}, Score: {score}")
 
@@ -121,22 +107,19 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.train:
-        gymenv = gym.make(args.gymenv)
-        env = FlattenObservation(gymenv)
+        env = gym.make(args.gymenv)
         train(env, args.sb3_algo)
 
     if args.test:
         if os.path.isfile(args.test):
-            gymenv = gym.make(args.gymenv)
-            env = FlattenObservation(gymenv)
+            env = gym.make(args.gymenv)
             test(env, args.sb3_algo, path_to_model=args.test)
         else:
             print(f'{args.test} not found.')
 
     if args.cont:
         if os.path.isfile(args.cont):
-            gymenv = gym.make(args.gymenv)
-            env = FlattenObservation(gymenv)
+            env = gym.make(args.gymenv)
             cont_train(env, args.sb3_algo, path_to_model=args.cont)
         else:
             print(f'{args.cont} not found.')
