@@ -86,6 +86,7 @@ def test(env, sb3_algo, path_to_model):
             action,_ = model.predict(obs)
             obs, reward, done, truncated, info = env.step(action)
             score += reward
+
             env.render()
             time.sleep(1 / 240)
             

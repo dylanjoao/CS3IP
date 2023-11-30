@@ -16,7 +16,7 @@ class PendulumClimbEnv(gym.Env):
 
     def __init__(self):
 
-        self.client = p.connect(p.DIRECT)
+        self.client = p.connect(p.GUI)
 
         # +vel, -vel, grasp, release
         self.action_space = gym.spaces.Discrete(8)
@@ -63,8 +63,8 @@ class PendulumClimbEnv(gym.Env):
         ob = self._get_obs()
         info = self._get_info()
 
-        # Quadratic reward
-        reward = ((self.initial_dist / self.current_distance) ** 2) / 100
+        # Reward based on distance towards goal
+        reward = max(self.prev_dist - self.current_distance, 0)
 
         # Check termination conditions
         terminated = False
@@ -74,7 +74,7 @@ class PendulumClimbEnv(gym.Env):
             terminated = True
         if self.current_distance < 0.05:
             terminated = True
-            reward = 50
+            reward = 100
         elif self.pendulum_pos[2] < 0.8 or self.pendulum_pos[2] > 50:
             terminated = True
 
