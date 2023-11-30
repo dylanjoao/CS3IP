@@ -9,12 +9,11 @@ Python 3.8
 
 ![main.py](https://i.imgur.com/Sl7ygce.png)
 
-## Random
-https://github.com/dylanjoao/CS3IP/assets/64186394/743d71c7-511c-405d-97bf-ebe14baaabf2
-## A2C
-https://github.com/dylanjoao/CS3IP/assets/64186394/38f235da-44e9-42f3-85b2-3b9a4ec03289
-## SAC
-https://github.com/dylanjoao/CS3IP/assets/64186394/2e70006a-d59a-4ddc-bbb8-2af67e913906
+## DQN @ 3.4M steps (60 minutes)
+
+https://github.com/dylanjoao/CS3IP/assets/64186394/dde41230-0ef6-42f7-9415-a34813dacfcd
+
+![graph dqn](https://i.imgur.com/fqoVePt.png)
 
 
 
