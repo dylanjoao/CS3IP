@@ -15,80 +15,53 @@ class PendulumClimbEnv(gym.Env):
     metadata = {'render.modes': ['human']}
 
     def __init__(self):
-
         self.client = p.connect(p.GUI)
 
-        # +vel, -vel, grasp, release
-        self.action_space = gym.spaces.Discrete(8)
+        # +/-velX joint1, +/-velY joint1
+        # +/-velX joint2, +/-velY joint2
+        # grasp
+        # release
+        self.action_space = gym.spaces.Discrete(10)
 
-        # Holds[2], Position[3], Angle[3], Velocity[3], Distance[1]
-        self.observation_space = gym.spaces.Box(low=-float('inf'), high=float('inf'), shape=(12,), dtype=np.float32)
-
-        self.np_random, _ = gym.utils.seeding.np_random()
+        # Holds[2], DistanceAwayFromNextHold[2], Velocity[3]
+        self.observation_space = gym.spaces.Box(low=-float('inf'), high=float('inf'), shape=(7,), dtype=np.float32)
 
         self.pendulum = None
-        self.pendulum_pos = []
-        self.goal = None
-        self.initial_dist = None
-        self.prev_dist = None
-        self.current_distance = None
         self.targets = []
-        self._max_episode_steps = 1000
-        self._elapsed_steps = 0
+        self.next_target = None
 
-        # configure pybullet GUI
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
-        p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
-        p.resetDebugVisualizerCamera(cameraDistance=10, cameraYaw=90, cameraPitch=0, cameraTargetPosition=[0, 0, 5])
-        p.setTimeStep(1 / 30, self.client)
 
     def _get_obs(self):
-        pen_ob = self.pendulum.get_observation()
-        agent_position = pen_ob[2:5]
-        self.pendulum_pos = agent_position
-        self.current_distance = np.linalg.norm(np.array(agent_position) - np.array(self.goal))
+        holds = [0.0 if x is None else 1.0 for x in self.pendulum.constraints]
+        dist = [0.0, 0.0]
+        velocity, _ = p.getBaseVelocity(self.pendulum.id, self.client)
 
-        return np.concatenate((pen_ob, [self.current_distance]), dtype=np.float32)
+        next_target_pos, _ = p.getBasePositionAndOrientation(self.next_target.id, self.client)
+        joint_one_pos, _, _, _, _, _ = p.getLinkState(bodyUniqueId=self.pendulum.id, linkIndex=0,
+                                                      physicsClientId=self.client)
+        joint_two_pos, _, _, _, _, _ = p.getLinkState(bodyUniqueId=self.pendulum.id, linkIndex=1,
+                                                      physicsClientId=self.client)
+        dist[0] = np.linalg.norm(np.array(joint_one_pos) - np.array(next_target_pos))
+        dist[1] = np.linalg.norm(np.array(joint_two_pos) - np.array(next_target_pos))
+
+        return np.concatenate((holds, dist, velocity), dtype=np.float32)
 
     def _get_info(self):
-        return {"distance:": np.linalg.norm(np.array(self.pendulum_pos) - np.array(self.goal))}
+        goal_target_pos, _ = p.getBasePositionAndOrientation(self.targets[-1].id, self.client)
+        pendulum_pos, _ = p.getBasePositionAndOrientation(self.pendulum.id, self.client)
+        distance_from_goal = np.linalg.norm(np.array(pendulum_pos) - np.array(goal_target_pos))
+        return {"distance": distance_from_goal}
 
     def step(self, action):
-        # Feed action to the pendulum and get observation of pendulum's state
-        self.pendulum.apply_action(action)
+        p.stepSimulation(self.client)
 
-        p.stepSimulation()
 
-        # Gather information about the env
-        ob = self._get_obs()
-        info = self._get_info()
 
-        # Reward based on distance towards goal
-        reward = max(self.prev_dist - self.current_distance, 0)
 
-        # Check termination conditions
-        terminated = False
-        truncated = False
+        obs, info = self._get_obs(), self._get_info()
 
-        if self.prev_dist + 0.05 < self.current_distance:
-            terminated = True
-        if self.current_distance < 0.05:
-            terminated = True
-            reward = 100
-        elif self.pendulum_pos[2] < 0.8 or self.pendulum_pos[2] > 50:
-            terminated = True
-
-        if self._elapsed_steps >= self._max_episode_steps:
-            truncated = True
-        self._elapsed_steps += 1
-
-        self.prev_dist = self.current_distance
-
-        return ob, reward, terminated, truncated, info
-
-    def seed(self, seed=None):
-        self.np_random, seed = gym.utils.seeding.np_random(seed)
-        return [seed]
+        return obs, 0.0, False, False, info
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
@@ -96,16 +69,16 @@ class PendulumClimbEnv(gym.Env):
         p.resetSimulation(self.client)
         p.setGravity(0, 0, -10)
 
-        # Reload the plane and car
         plane = p.loadURDF("plane.urdf")
-        self.pendulum = Pendulum(self.client, [0, 0, 2.5])
+        self.pendulum = Pendulum(self.client, [0, 0, 2.0])
         self.targets.clear()
 
-        # Targets equally apart
-        dist = 1.0
+        dist = 9.0
         for i in range(10):
-            target = Target(self.client, [0, 0, i + 1 * 2 + dist])
+            target = Target(self.client, [0, 0, 3+i * 2.0])
             self.targets.append(target)
+
+        self.next_target = self.targets[1]
 
         initial_constraint = p.createConstraint(parentBodyUniqueId=self.pendulum.id,
                                                 parentLinkIndex=0,
@@ -115,31 +88,14 @@ class PendulumClimbEnv(gym.Env):
                                                 jointAxis=[0, 0, 0],
                                                 parentFramePosition=[0, 0, 0],
                                                 childFramePosition=[0, 0, 0])
-        self.pendulum.top_held = self.targets[0]
-        self.pendulum.targets = self.targets
-        self.pendulum.top_held = initial_constraint
-        self.targets[0].constraint = initial_constraint
+        self.pendulum.constraints[0] = initial_constraint
 
-        goal_pos, _ = p.getBasePositionAndOrientation(self.targets[-1].id, self.client)
-        self.goal = goal_pos
+        obs, info = self._get_obs(), self._get_info()
 
-        # Get observation to return
-        ob = self._get_obs()
-        agent_position = ob[2:5]
-
-        self.pendulum_pos = agent_position
-        self.initial_dist = np.linalg.norm(np.array(agent_position) - np.array(goal_pos))
-        self.current_distance = self.initial_dist
-        self.prev_dist = self.current_distance
-        self._elapsed_steps = 0
-
-        info = self._get_info()
-
-        return ob, info
+        return obs, info
 
     def render(self, mode='human'):
         pass
-        # self.client = p.connect(p.DIRECT)
 
     def close(self):
         p.disconnect(self.client)

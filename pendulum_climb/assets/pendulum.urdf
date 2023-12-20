@@ -12,14 +12,14 @@
     <link name="base_link">
         <visual>
             <geometry>
-                <capsule radius="0.2" length="0.5"/>
+                <capsule radius="0.2" length="1.5"/>
                 <origin rpy="0 0 0" xyz="0 0 0"/>
             </geometry>
             <material name="blue"/>
         </visual>
         <collision> 
              <geometry> 
-                <capsule radius="0.2" length="0.5"/>
+                <capsule radius="0.2" length="1.5"/>
                 <origin rpy="0 0 0" xyz="0 0 0"/>
             </geometry>
         </collision> 
@@ -29,12 +29,12 @@
         </inertial> 
     </link>
 
-    <joint name="top_joint" type="continuous">
+    <joint name="top_joint" type="spherical">
         <parent link="base_link"/>
         <child link="top_link"/> 
-        <axis xyz="1 0 0"/>
-        <origin xyz="0 0 0.5"/>
-        <limit effort="1000" velocity="100" />
+        <axis xyz="0 0 0"/>
+        <origin xyz="0 0 1.0"/>
+        <limit lower="0" upper="0" effort="0.0" velocity="0.0" />
     </joint>
 
     <link name="top_link">
@@ -57,12 +57,13 @@
         </inertial> 
     </link>
 
-    <joint name="bottom_joint" type="continuous">
+
+    <joint name="bottom_joint" type="fixed">
         <parent link="base_link"/>
         <child link="bottom_link"/> 
-        <axis xyz="1 0 0"/>
-        <origin xyz="0 0 -0.5"/>
-        <limit effort="1000" velocity="100" />
+        <axis xyz="0 0 0"/>
+        <origin xyz="0 0 -1.0"/>
+        <limit lower="0" upper="0" effort="0.0" velocity="0.0" />
     </joint>
 
     <link name="bottom_link">
@@ -84,6 +85,5 @@
             <inertia ixx="0.0" ixy="0" ixz="0" iyy="0.0" iyz="0.0" izz="0.0"/>
         </inertial> 
     </link>
-
 
 </robot>
