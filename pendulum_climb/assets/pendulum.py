@@ -14,12 +14,14 @@ class Pendulum:
 
         # 2 Contact points
         self.constraints = [None, None]
+        self.targets = []
 
     def apply_torque(self, joint, force):
         p.applyExternalTorque(objectUniqueId=self.id,
                               linkIndex=joint,
                               torqueObj=force,
-                              flags=p.LINK_FRAME)
+                              flags=p.LINK_FRAME,
+                              physicsClientId=self.client)
 
     def get_ids(self):
         return self.id, self.client
@@ -67,11 +69,39 @@ class Pendulum:
             if in_range is not None:
                 self.create_hold(joint, in_range.id)
 
-        elif action == 3 or action == 7:
+        elif action == 5 or action == 11:
             self.remove_hold(joint)
 
-        def create_hold(parent_link, child):
-            pass
+    def create_hold(self, parent_link, child):
+        self.remove_hold(parent_link)
+        constraint = p.createConstraint(parentBodyUniqueId=self.id,
+                                        parentLinkIndex=parent_link,
+                                        childBodyUniqueId=child,
+                                        childLinkIndex=-1,
+                                        jointType=p.JOINT_POINT2POINT,
+                                        jointAxis=[0, 0, 0],
+                                        parentFramePosition=[0, 0, 0],
+                                        childFramePosition=[0, 0, 0],
+                                        physicsClientId=self.client)
 
-        def remove_hold(constraint):
-            pass
+        self.constraints[parent_link] = constraint
+
+    def remove_hold(self, link):
+        if self.constraints[link] is None:
+            return
+
+        p.removeConstraint(self.constraints[link], physicsClientId=self.client)
+        self.constraints[link] = None
+
+    def target_in_range(self, link):
+        link_state = p.getLinkState(self.id, link, physicsClientId=self.client)
+        target_in_range = None
+
+        for i in range(len(self.targets)):
+            target_pos, _ = p.getBasePositionAndOrientation(self.targets[i].id, physicsClientId=self.client)
+            distance = np.linalg.norm(np.array(link_state[0]) - np.array(target_pos))
+            if distance < 0.2:
+                target_in_range = self.targets[i]
+                break
+
+        return target_in_range

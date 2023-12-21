@@ -1,4 +1,5 @@
 import os
+from pprint import pprint
 from time import sleep
 
 import gymnasium as gym
@@ -28,16 +29,25 @@ class PendulumClimbEnv(gym.Env):
 
         self.pendulum = None
         self.targets = []
+        self.target_order = []
         self.next_target = None
+        self.best_distance = float('inf')
+        self.prev_dist = 0.0
 
+        self.steps = 0
+        self.max_steps = 1500
+
+        # configure pybullet GUI
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
+        p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
+        p.resetDebugVisualizerCamera(cameraDistance=10, cameraYaw=90, cameraPitch=0, cameraTargetPosition=[0, 0, 5])
 
     def _get_obs(self):
         holds = [0.0 if x is None else 1.0 for x in self.pendulum.constraints]
         dist = [0.0, 0.0]
-        velocity, _ = p.getBaseVelocity(self.pendulum.id, self.client)
+        velocity, _ = p.getBaseVelocity(self.pendulum.id, physicsClientId=self.client)
 
-        next_target_pos, _ = p.getBasePositionAndOrientation(self.next_target.id, self.client)
+        next_target_pos, _ = p.getBasePositionAndOrientation(self.next_target.id, physicsClientId=self.client)
         joint_one_pos, _, _, _, _, _ = p.getLinkState(bodyUniqueId=self.pendulum.id, linkIndex=0,
                                                       physicsClientId=self.client)
         joint_two_pos, _, _, _, _, _ = p.getLinkState(bodyUniqueId=self.pendulum.id, linkIndex=1,
@@ -48,36 +58,79 @@ class PendulumClimbEnv(gym.Env):
         return np.concatenate((holds, dist, velocity), dtype=np.float32)
 
     def _get_info(self):
-        goal_target_pos, _ = p.getBasePositionAndOrientation(self.targets[-1].id, self.client)
-        pendulum_pos, _ = p.getBasePositionAndOrientation(self.pendulum.id, self.client)
+        goal_target_pos, _ = p.getBasePositionAndOrientation(self.targets[-1].id, physicsClientId=self.client)
+        pendulum_pos, _ = p.getBasePositionAndOrientation(self.pendulum.id, physicsClientId=self.client)
         distance_from_goal = np.linalg.norm(np.array(pendulum_pos) - np.array(goal_target_pos))
         return {"distance": distance_from_goal}
 
     def step(self, action):
-        p.stepSimulation(self.client)
+        p.stepSimulation(physicsClientId=self.client)
 
+        reward, terminated, truncated = 0.0, False, False
 
+        self.pendulum.apply_action(action)
 
+        # Check if attached to next target
+        for constraint in self.pendulum.constraints:
+            if constraint is None: continue
+            target = p.getConstraintInfo(constraintUniqueId=constraint, physicsClientId=self.client)[2]
+            if target != self.next_target.id: continue
+            self.target_order.pop(0)
+
+            # If last target
+            if len(self.target_order) == 0:
+                terminated = True
+                reward += 100.0
+            else:
+                self.next_target = self.target_order[0]
+                reward += 10.0
+
+        # Main Reward
+        pendulum_pos, _ = p.getBasePositionAndOrientation(self.pendulum.id, physicsClientId=self.client)
+        next_target_pos, _ = p.getBasePositionAndOrientation(self.next_target.id, physicsClientId=self.client)
+        distance_away = np.linalg.norm(np.array(pendulum_pos) - np.array(next_target_pos))
+        if distance_away < self.best_distance:
+            self.best_distance = distance_away
+            reward += 1.0
+        else:
+            reward -= distance_away-self.best_distance
+
+        self.prev_dist = distance_away
+
+        # Check termination condition
+        pendulum_pos, _ = p.getBasePositionAndOrientation(self.pendulum.id, physicsClientId=self.client)
+        if pendulum_pos[2] < 1.0:
+            terminated = True
+
+        self.steps += 1
+        if self.steps > self.max_steps:
+            truncated = True
 
         obs, info = self._get_obs(), self._get_info()
 
-        return obs, 0.0, False, False, info
+        return obs, reward, terminated, truncated, info
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
 
-        p.resetSimulation(self.client)
+        p.resetSimulation(physicsClientId=self.client)
         p.setGravity(0, 0, -10)
 
         plane = p.loadURDF("plane.urdf")
         self.pendulum = Pendulum(self.client, [0, 0, 2.0])
         self.targets.clear()
+        self.target_order.clear()
+        self.steps = 0
+        self.prev_dist = 0.0
+        self.best_distance = float('inf')
 
         dist = 9.0
         for i in range(10):
-            target = Target(self.client, [0, 0, 3+i * 2.0])
+            target = Target(self.client, [0, 0, 3 + i * 2.0])
             self.targets.append(target)
 
+        self.target_order = self.targets.copy()[1:-1]
+        self.pendulum.targets = self.targets.copy()
         self.next_target = self.targets[1]
 
         initial_constraint = p.createConstraint(parentBodyUniqueId=self.pendulum.id,
@@ -87,7 +140,8 @@ class PendulumClimbEnv(gym.Env):
                                                 jointType=p.JOINT_POINT2POINT,
                                                 jointAxis=[0, 0, 0],
                                                 parentFramePosition=[0, 0, 0],
-                                                childFramePosition=[0, 0, 0])
+                                                childFramePosition=[0, 0, 0],
+                                                physicsClientId=self.client)
         self.pendulum.constraints[0] = initial_constraint
 
         obs, info = self._get_obs(), self._get_info()
