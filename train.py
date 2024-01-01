@@ -88,7 +88,7 @@ def test(env, sb3_algo, path_to_model):
             score += reward
 
             env.render()
-            time.sleep(1 / 240)
+            # time.sleep(1 / 240)
             
 
         print(f"Episode {episode}, Score: {score}")

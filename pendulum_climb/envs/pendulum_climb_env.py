@@ -84,17 +84,18 @@ class PendulumClimbEnv(gym.Env):
             else:
                 self.next_target = self.target_order[0]
                 reward += 10.0
+                self.best_distance = float('inf')
 
         # Main Reward
         pendulum_pos, _ = p.getBasePositionAndOrientation(self.pendulum.id, physicsClientId=self.client)
         next_target_pos, _ = p.getBasePositionAndOrientation(self.next_target.id, physicsClientId=self.client)
-        distance_away = np.linalg.norm(np.array(pendulum_pos) - np.array(next_target_pos))
-        if distance_away < self.best_distance:
+        distance_away = np.linalg.norm(np.array(pendulum_pos[2]) - np.array(next_target_pos[2]))
+        if distance_away <= self.best_distance:
             self.best_distance = distance_away
-            reward += 1.0
+            reward += 1.0 * (1-(self.steps/self.max_steps))
         else:
-            reward -= distance_away-self.best_distance
-
+            reward -= 50.0
+            # terminated = True
         self.prev_dist = distance_away
 
         # Check termination condition
