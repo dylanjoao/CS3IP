@@ -39,11 +39,12 @@ def make_env(env_id: str, rank: int, seed: int = 0) -> Callable:
 
 if __name__ == '__main__':
     env_id = "PendulumClimb-v0"
-    num_cpu = 15  # Number of processes to use
+    num_cpu = 20  # Number of processes to use
     # Create the vectorized environment
     env = SubprocVecEnv([make_env(env_id, i) for i in range(num_cpu)])
 
     model = DQN("MlpPolicy", env, verbose=1, device='cuda', tensorboard_log=log_dir)
+    # model = DQN.load("E:/Programs/GymRL/PyBullet/CS3IP/models/MP_DQN_3650000.zip", env=env, verbose=1, device='cuda', tensorboard_log=log_dir)
 
     TIMESTEPS = 25000
     iters = 0

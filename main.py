@@ -27,7 +27,7 @@ for episode in range(1, episode + 1):
         score += reward
         step += 1
         env.render()
-        # time.sleep(1 / 240)
+        time.sleep(1 / 240)
         # pprint(obs, compact=True)
 
     print(f"Episode {episode}, Score: {score}, Steps {step}")

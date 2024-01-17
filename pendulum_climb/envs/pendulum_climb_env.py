@@ -16,13 +16,13 @@ class PendulumClimbEnv(gym.Env):
     metadata = {'render.modes': ['human']}
 
     def __init__(self):
-        self.client = p.connect(p.GUI)
+        self.client = p.connect(p.GUI_SERVER)
 
-        # +/-velX joint1, +/-velY joint1
-        # +/-velX joint2, +/-velY joint2
+        # +/-velX joint1,
+        # +/-velX joint2,
         # grasp
         # release
-        self.action_space = gym.spaces.Discrete(10)
+        self.action_space = gym.spaces.Discrete(8)
 
         # Holds[2], DistanceAwayFromNextHold[2], Velocity[3]
         self.observation_space = gym.spaces.Box(low=-float('inf'), high=float('inf'), shape=(7,), dtype=np.float32)
@@ -59,9 +59,11 @@ class PendulumClimbEnv(gym.Env):
 
     def _get_info(self):
         goal_target_pos, _ = p.getBasePositionAndOrientation(self.targets[-1].id, physicsClientId=self.client)
+        next_target_pos, _ = p.getBasePositionAndOrientation(self.targets[0].id, physicsClientId=self.client)
         pendulum_pos, _ = p.getBasePositionAndOrientation(self.pendulum.id, physicsClientId=self.client)
         distance_from_goal = np.linalg.norm(np.array(pendulum_pos) - np.array(goal_target_pos))
-        return {"distance": distance_from_goal}
+        distance_from_next_target = np.linalg.norm(np.array(pendulum_pos) - np.array(next_target_pos))
+        return {"overall_distance": distance_from_goal, "next_distance": distance_from_next_target}
 
     def step(self, action):
         p.stepSimulation(physicsClientId=self.client)
@@ -94,7 +96,7 @@ class PendulumClimbEnv(gym.Env):
             self.best_distance = distance_away
             reward += 1.0 * (1-(self.steps/self.max_steps))
         else:
-            reward -= 50.0
+            reward -= 1.0
             # terminated = True
         self.prev_dist = distance_away
 

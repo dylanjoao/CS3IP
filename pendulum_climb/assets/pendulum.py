@@ -30,46 +30,34 @@ class Pendulum:
 
         # 0 = +VelX (1)
         # 1 = -VelX (1)
-        # 2 = +VelY (1)
-        # 3 = -VelY (1)
-        # 4 = Grab (1)
-        # 5 = Release (1)
+        # 2 = Grab (1)
+        # 3 = Release (1)
 
-        # 6 = +VelX (2)
-        # 7 = -VelX (2)
-        # 8 = +VelY (2)
-        # 9 = -VelY (2)
-        # 10 = Grab (2)
-        # 11 = Release (2)
+        # 4 = +VelX (2)
+        # 5 = -VelX (2)
+        # 6 = Grab (2)
+        # 7 = Release (2)
 
         joint = None
-        if action < 6:
+        if action < 4:
             joint = 0
-        elif action > 5:
+        elif action > 3:
             joint = 1
 
         # +VelX
-        if action == 0 or action == 6:
+        if action == 0 or action == 4:
             self.apply_torque(joint, [150.0, 0, 0])
 
         # -VelX
-        elif action == 1 or action == 7:
+        elif action == 1 or action == 5:
             self.apply_torque(joint, [-150.0, 0, 0])
 
-        # +VelY
-        elif action == 2 or action == 8:
-            self.apply_torque(joint, [0.0, 150.0, 0])
-
-        # -VelY
-        elif action == 3 or action == 9:
-            self.apply_torque(joint, [0.0, -150.0, 0])
-
-        elif (action == 4 and self.constraints[0] is None) or (action == 10 and self.constraints[1] is None):
+        elif (action == 2 and self.constraints[0] is None) or (action == 6 and self.constraints[1] is None):
             in_range = self.target_in_range(joint)
             if in_range is not None:
                 self.create_hold(joint, in_range.id)
 
-        elif action == 5 or action == 11:
+        elif action == 3 or action == 7:
             self.remove_hold(joint)
 
     def create_hold(self, parent_link, child):

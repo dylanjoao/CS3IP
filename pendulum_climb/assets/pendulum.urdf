@@ -29,7 +29,7 @@
         </inertial> 
     </link>
 
-    <joint name="top_joint" type="spherical">
+    <joint name="top_joint" type="fixed">
         <parent link="base_link"/>
         <child link="top_link"/> 
         <axis xyz="0 0 0"/>

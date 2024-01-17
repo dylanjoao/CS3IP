@@ -1,3 +1,4 @@
+from pprint import pprint
 import time
 import gymnasium as gym
 from gymnasium.wrappers import FlattenObservation
@@ -75,7 +76,7 @@ def test(env, sb3_algo, path_to_model):
         print('Algorithm not found')
         return
 
-    episode = 10
+    episode = 100
     for episode in range(1, episode + 1):
         obs, info = env.reset()
         done = False
@@ -88,7 +89,9 @@ def test(env, sb3_algo, path_to_model):
             score += reward
 
             env.render()
-            # time.sleep(1 / 240)
+            # time.sleep(1 / 2400000)
+            # pprint(obs, compact=True)
+            pprint(info, compact=True)
             
 
         print(f"Episode {episode}, Score: {score}")
