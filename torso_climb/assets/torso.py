@@ -7,7 +7,7 @@ import math
 class Torso:
     def __init__(self, client, pos):
         self.client = client
-        f_name = os.path.join(os.path.dirname(__file__), 'humanoid.xml')
+        f_name = os.path.join(os.path.dirname(__file__), 'torso.xml')
         self.id = p.loadURDF(fileName=f_name,
                              basePosition=pos,
                              physicsClientId=client)

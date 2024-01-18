@@ -33,7 +33,7 @@ class TorsoClimbEnv(gym.Env):
         # configure pybullet GUI
         p.setAdditionalSearchPath(pybullet_data.getDataPath(), physicsClientId=self.client)
         p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0, physicsClientId=self.client)
-        p.resetDebugVisualizerCamera(cameraDistance=10, cameraYaw=-90, cameraPitch=0, cameraTargetPosition=[0, 0, 5], physicsClientId=self.client)
+        p.resetDebugVisualizerCamera(cameraDistance=3, cameraYaw=-90, cameraPitch=0, cameraTargetPosition=[0, 0, 2], physicsClientId=self.client)
 
     def _get_obs(self):
         return dict()
