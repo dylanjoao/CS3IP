@@ -9,6 +9,7 @@ import pybullet as p
 import pybullet_data
 
 from torso_climb.assets.torso import Torso
+from torso_climb.assets.wall import Wall
 
 
 class TorsoClimbEnv(gym.Env):
@@ -33,7 +34,7 @@ class TorsoClimbEnv(gym.Env):
         # configure pybullet GUI
         p.setAdditionalSearchPath(pybullet_data.getDataPath(), physicsClientId=self.client)
         p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0, physicsClientId=self.client)
-        p.resetDebugVisualizerCamera(cameraDistance=3, cameraYaw=-90, cameraPitch=0, cameraTargetPosition=[0, 0, 2], physicsClientId=self.client)
+        p.resetDebugVisualizerCamera(cameraDistance=4, cameraYaw=-90, cameraPitch=0, cameraTargetPosition=[0, 0, 3], physicsClientId=self.client)
 
     def _get_obs(self):
         return np.concatenate(([0.0], [0.1]), dtype=np.float32)
@@ -55,8 +56,7 @@ class TorsoClimbEnv(gym.Env):
         terminated = False
         truncated = False
 
-        if self.render_mode == 'human':
-            sleep(1 / 240)
+        if self.render_mode == 'human': sleep(1 / 240)
 
         p.stepSimulation(physicsClientId=self.client)
 
@@ -74,6 +74,7 @@ class TorsoClimbEnv(gym.Env):
 
         flags = p.URDF_MAINTAIN_LINK_ORDER + p.URDF_USE_SELF_COLLISION + p.URDF_USE_SELF_COLLISION_EXCLUDE_ALL_PARENTS
         plane = p.loadURDF("plane.urdf", physicsClientId=self.client)
+        wall = Wall(client=self.client, pos=[0.5, 0, 2.5])
         torso = Torso(client=self.client, pos=[0, 0, 2])
 
         self.torso = torso
