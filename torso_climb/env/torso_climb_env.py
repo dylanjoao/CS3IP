@@ -8,6 +8,7 @@ import math
 import pybullet as p
 import pybullet_data
 
+from torso_climb.assets.target import Target
 from torso_climb.assets.torso import Torso
 from torso_climb.assets.wall import Wall
 
@@ -75,7 +76,11 @@ class TorsoClimbEnv(gym.Env):
         flags = p.URDF_MAINTAIN_LINK_ORDER + p.URDF_USE_SELF_COLLISION + p.URDF_USE_SELF_COLLISION_EXCLUDE_ALL_PARENTS
         plane = p.loadURDF("plane.urdf", physicsClientId=self.client)
         wall = Wall(client=self.client, pos=[0.5, 0, 2.5])
-        torso = Torso(client=self.client, pos=[0, 0, 2])
+        torso = Torso(client=self.client, pos=[0, 0, 1])
+
+        for i in range(1):
+            target_1 = Target(client=self.client, pos=[0.45, 0.35, 1])
+            target_2 = Target(client=self.client, pos=[0.45, -0.35, 1])
 
         self.torso = torso
         ob = self._get_obs()

@@ -22,12 +22,19 @@ class Torso:
         self.ordered_joints = []
         self.ordered_joint_indices = []
 
+        self.right_hand = -1
+        self.left_hand = -1
+
+        p.resetBasePositionAndOrientation(bodyUniqueId=self.id[0], posObj=pos, ornObj=[0.0, 0.0, 0.0, 1.0], physicsClientId=client)
+
         jdict = {}
         for j in range(p.getNumJoints(self.human)):
             info = p.getJointInfo(self.human, j)
             link_name = info[12].decode("ascii")
             if link_name == "left_foot": left_foot = j
             if link_name == "right_foot": right_foot = j
+            if link_name == "left_wrist": self.left_hand = j
+            if link_name == "right_wrist": self.right_hand = j
             self.ordered_joint_indices.append(j)
 
             if info[2] != p.JOINT_REVOLUTE: continue
@@ -44,6 +51,7 @@ class Torso:
         self.motor_power += [75, 75, 75]
         self.motors = [jdict[n] for n in self.motor_names]
 
+
     def get_ids(self):
         return self.id, self.client
 
@@ -54,6 +62,12 @@ class Torso:
             ac = np.clip(actions[m], -limit, limit)
             forces[m] = self.motor_power[m] * ac * 0.082
         p.setJointMotorControlArray(self.human, self.motors, controlMode=p.TORQUE_CONTROL, forces=forces)
+
+    def attach(self, limb_link, target):
+        pass
+
+    def detach(self, limb):
+        pass
 
     def get_observation(self):
         pass
