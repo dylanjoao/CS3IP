@@ -3,6 +3,7 @@ import pybullet as p
 import os
 import math
 
+
 # Reference https://www.gymlibrary.dev/environments/mujoco/humanoid/
 class Torso:
     def __init__(self, client, pos):
@@ -22,10 +23,13 @@ class Torso:
         self.ordered_joints = []
         self.ordered_joint_indices = []
 
-        self.right_hand = -1
-        self.left_hand = -1
+        self.RIGHT_HAND = -1
+        self.LEFT_HAND = -1
+        self.rhand_cid = None
+        self.lhand_cid = None
 
-        p.resetBasePositionAndOrientation(bodyUniqueId=self.id[0], posObj=pos, ornObj=[0.0, 0.0, 0.0, 1.0], physicsClientId=client)
+        p.resetBasePositionAndOrientation(bodyUniqueId=self.id[0], posObj=pos, ornObj=[0.0, 0.0, 0.0, 1.0],
+                                          physicsClientId=client)
 
         jdict = {}
         for j in range(p.getNumJoints(self.human)):
@@ -33,8 +37,8 @@ class Torso:
             link_name = info[12].decode("ascii")
             if link_name == "left_foot": left_foot = j
             if link_name == "right_foot": right_foot = j
-            if link_name == "left_wrist": self.left_hand = j
-            if link_name == "right_wrist": self.right_hand = j
+            if link_name == "left_hand": self.LEFT_HAND = j
+            if link_name == "right_hand": self.RIGHT_HAND = j
             self.ordered_joint_indices.append(j)
 
             if info[2] != p.JOINT_REVOLUTE: continue
@@ -51,7 +55,6 @@ class Torso:
         self.motor_power += [75, 75, 75]
         self.motors = [jdict[n] for n in self.motor_names]
 
-
     def get_ids(self):
         return self.id, self.client
 
@@ -63,11 +66,74 @@ class Torso:
             forces[m] = self.motor_power[m] * ac * 0.082
         p.setJointMotorControlArray(self.human, self.motors, controlMode=p.TORQUE_CONTROL, forces=forces)
 
-    def attach(self, limb_link, target):
-        pass
+    # TODO
+    def force_attach(self, limb_link, target_id):
+        if limb_link == self.LEFT_HAND and self.lhand_cid is not None: self.detach(self.LEFT_HAND)
+        if limb_link == self.RIGHT_HAND and self.rhand_cid is not None: self.detach(self.RIGHT_HAND)
 
-    def detach(self, limb):
-        pass
+        constraint = p.createConstraint(parentBodyUniqueId=self.human,
+                                        parentLinkIndex=limb_link,
+                                        childBodyUniqueId=target_id,
+                                        childLinkIndex=-1,
+                                        jointType=p.JOINT_FIXED,
+                                        jointAxis=[0, 0, 0],
+                                        parentFramePosition=[0, 0, 0],
+                                        childFramePosition=[0, 0, 0],
+                                        physicsClientId=self.client)
+        p.changeConstraint(userConstraintUniqueId=constraint, maxForce=150, physicsClientId=self.client)
+
+        if limb_link == self.LEFT_HAND:
+            self.lhand_cid = constraint
+        else:
+            self.rhand_cid = constraint
+
+        print("Created hold")
+
+    # Attach to the closest target
+    # !!! CURRENTLY TESTING CONSTRAINT ON LEFT HAND!!!!
+    def attach(self, limb_link):
+        # If already attached return
+        if limb_link == self.LEFT_HAND and self.lhand_cid is not None: return
+        if limb_link == self.RIGHT_HAND and self.rhand_cid is not None: return
+
+        body_count = p.getNumBodies(physicsClientId=self.client)
+
+        for body_id in range(body_count):
+            body_info = p.getBodyInfo(body_id, physicsClientId=self.client)
+            body_name = body_info[0].decode("utf-8")
+
+            if body_name == "target":
+
+                points = p.getContactPoints(bodyA=self.human, bodyB=body_id, linkIndexA=self.LEFT_HAND, linkIndexB=-1,
+                                            physicsClientId=self.client)
+
+                # Contact made with target
+                if len(points) > 0:
+                    # constraint = p.createConstraint(parentBodyUniqueId=self.human,
+                    #                                 parentLinkIndex=limb_link,
+                    #                                 childBodyUniqueId=body_id,
+                    #                                 childLinkIndex=-1,
+                    #                                 jointType=p.JOINT_FIXED,
+                    #                                 jointAxis=[0, 0, 0],
+                    #                                 parentFramePosition=points[0][5],
+                    #                                 childFramePosition=points[0][6],
+                    #                                 physicsClientId=self.client)
+                    # p.changeConstraint(userConstraintUniqueId=constraint, maxForce=150, physicsClientId=self.client)
+                    #
+                    # if limb_link == self.LEFT_HAND:
+                    #     self.lhand_cid = constraint
+                    # else:
+                    #     self.rhand_cid = constraint
+                    #
+                    # print("Created hold")
+                    break
+
+    def detach(self, limb_link):
+        if limb_link == self.LEFT_HAND and self.lhand_cid is not None:
+            p.removeConstraint(userConstraintUniqueId=self.lhand_cid, physicsClientId=self.client)
+        elif limb_link == self.RIGHT_HAND and self.rhand_cid is not None:
+            p.removeConstraint(userConstraintUniqueId=self.rhand_cid, physicsClientId=self.client)
 
     def get_observation(self):
         pass
+

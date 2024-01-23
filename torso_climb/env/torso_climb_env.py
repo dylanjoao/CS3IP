@@ -9,7 +9,7 @@ import pybullet as p
 import pybullet_data
 
 from torso_climb.assets.target import Target
-from torso_climb.assets.torso import Torso
+from torso_climb.assets.torso import *
 from torso_climb.assets.wall import Wall
 
 
@@ -72,12 +72,17 @@ class TorsoClimbEnv(gym.Env):
 
         p.resetSimulation(physicsClientId=self.client)
         p.setGravity(0, 0, -9.8, physicsClientId=self.client)
+        p.setPhysicsEngineParameter(fixedTimeStep=1.0 / 60.,
+                                    solverResidualThreshold=1 - 10,
+                                    numSolverIterations=50,
+                                    numSubSteps=4)
 
         flags = p.URDF_MAINTAIN_LINK_ORDER + p.URDF_USE_SELF_COLLISION + p.URDF_USE_SELF_COLLISION_EXCLUDE_ALL_PARENTS
         plane = p.loadURDF("plane.urdf", physicsClientId=self.client)
         wall = Wall(client=self.client, pos=[0.5, 0, 2.5])
         torso = Torso(client=self.client, pos=[0, 0, 1])
 
+        target_1 = None
         for i in range(1):
             target_1 = Target(client=self.client, pos=[0.45, 0.35, 1])
             target_2 = Target(client=self.client, pos=[0.45, -0.35, 1])
@@ -86,6 +91,8 @@ class TorsoClimbEnv(gym.Env):
         ob = self._get_obs()
         info = self._get_info()
 
+        self.torso.force_attach(self.torso.LEFT_HAND, target_1.id)
+
         return np.array(ob, dtype=np.float32), info
 
     def render(self):
@@ -93,3 +100,4 @@ class TorsoClimbEnv(gym.Env):
 
     def close(self):
         p.disconnect(physicsClientId=self.client)
+

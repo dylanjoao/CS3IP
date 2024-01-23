@@ -29,10 +29,11 @@
                 <joint armature="0.0051" axis="0 -1 1" name="right_shoulder2" pos="0 0 0" range="-85 60" stiffness="1" type="hinge"/>
                 <geom fromto="0 0 0 .16 -.16 -.16" name="right_uarm1" size="0.04 0.16" type="capsule"/>
                 <body name="right_lower_arm" pos=".18 -.18 -.18">
-                    <joint armature="0.0028" axis="0 -1 1" name="right_elbow" pos="0 0 0" range="-90 50" stiffness="0" type="hinge"/>
+                    <joint armature="0.0028" axis="0 -1 1"  name="right_elbow" pos="0 0 0" range="-90 50" stiffness="0" type="hinge"/>
                     <geom fromto="0.01 0.01 0.01 .17 .17 .17" name="right_larm" size="0.031" type="capsule"/>
-                    <body name="right_wrist" pos="0 0 0">
-                        <geom name="right_hand" pos=".18 .18 .18" size="0.04" type="sphere"/>
+                    <body name="right_hand" pos=".18 .18 .18">
+                        <joint armature="0" axis="-1 -1 -1" name="right_wrist" pos="0 0 0" range="0 0" stiffness="1" type="hinge"/>
+                        <geom name="right_hand" pos="0 0 0" size="0.04" type="sphere"/>
                     </body>
                 </body>
             </body>
@@ -43,8 +44,9 @@
                 <body name="left_lower_arm" pos=".18 .18 -.18">
                     <joint armature="0.0028" axis="0 -1 -1" name="left_elbow" pos="0 0 0" range="-90 50" stiffness="0" type="hinge"/>
                     <geom fromto="0.01 -0.01 0.01 .17 -.17 .17" name="left_larm" size="0.031" type="capsule"/>
-                    <body name="left_wrist" pos="0 0 0">
-                        <geom name="left_hand" pos=".18 -.18 .18" size="0.04" type="sphere"/>
+                    <body name="left_hand" pos="0.18 -0.18 0.18">
+                        <joint armature="0" axis="-1 -1 -1" name="left_wrist" pos="0 0 0" range="0 0" stiffness="1" type="hinge"/>
+                        <geom name="left_hand" pos="0 0 0" size="0.04" type="sphere"/>
                     </body>
                 </body>
             </body>
