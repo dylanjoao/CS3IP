@@ -37,7 +37,18 @@ class TorsoClimbEnv(gym.Env):
         p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0, physicsClientId=self.client)
         p.resetDebugVisualizerCamera(cameraDistance=4, cameraYaw=-90, cameraPitch=0, cameraTargetPosition=[0, 0, 3], physicsClientId=self.client)
 
+
+    #  position of bodies,
+    # velocity,
+    # com_inertia,
+    # com_velocity,
     def _get_obs(self):
+        obs = []
+
+        joints = p.getNumJoints(self.torso.human)
+        state = p.getLinkStates(self.torso.human, linkIndices=self.torso.ordered_joint_indices, computeLinkVelocity=1, physicsClientId=self.client)
+        obs += state
+
         return np.concatenate(([0.0], [0.1]), dtype=np.float32)
 
     def _get_info(self):
@@ -83,15 +94,17 @@ class TorsoClimbEnv(gym.Env):
         torso = Torso(client=self.client, pos=[0, 0, 1])
 
         target_1 = None
+        target_2 = None
         for i in range(1):
-            target_1 = Target(client=self.client, pos=[0.45, 0.35, 1])
-            target_2 = Target(client=self.client, pos=[0.45, -0.35, 1])
+            target_1 = Target(client=self.client, pos=[0.1, 0.35, 1])
+            target_2 = Target(client=self.client, pos=[0.1, -0.35, 1])
 
         self.torso = torso
         ob = self._get_obs()
         info = self._get_info()
 
-        self.torso.force_attach(self.torso.LEFT_HAND, target_1.id)
+        self.torso.force_attach(self.torso.LEFT_HAND, target_1.id, force=-1)
+        self.torso.force_attach(self.torso.RIGHT_HAND, target_2.id, force=-1)
 
         return np.array(ob, dtype=np.float32), info
 

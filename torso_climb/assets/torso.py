@@ -32,11 +32,10 @@ class Torso:
                                           physicsClientId=client)
 
         jdict = {}
-        for j in range(p.getNumJoints(self.human)):
-            info = p.getJointInfo(self.human, j)
+        for j in range(p.getNumJoints(self.human, physicsClientId=client)):
+            info = p.getJointInfo(self.human, j, physicsClientId=client)
             link_name = info[12].decode("ascii")
-            if link_name == "left_foot": left_foot = j
-            if link_name == "right_foot": right_foot = j
+            print(link_name)
             if link_name == "left_hand": self.LEFT_HAND = j
             if link_name == "right_hand": self.RIGHT_HAND = j
             self.ordered_joint_indices.append(j)
@@ -47,7 +46,7 @@ class Torso:
             lower, upper = (info[8], info[9])
             self.ordered_joints.append((j, lower, upper))
 
-            p.setJointMotorControl2(self.human, j, controlMode=p.VELOCITY_CONTROL, force=0)
+            p.setJointMotorControl2(self.human, j, controlMode=p.VELOCITY_CONTROL, force=0, physicsClientId=client)
 
         self.motor_names = ["right_shoulder1", "right_shoulder2", "right_elbow"]
         self.motor_power = [75, 75, 75]
@@ -67,7 +66,7 @@ class Torso:
         p.setJointMotorControlArray(self.human, self.motors, controlMode=p.TORQUE_CONTROL, forces=forces)
 
     # TODO
-    def force_attach(self, limb_link, target_id):
+    def force_attach(self, limb_link, target_id, force):
         if limb_link == self.LEFT_HAND and self.lhand_cid is not None: self.detach(self.LEFT_HAND)
         if limb_link == self.RIGHT_HAND and self.rhand_cid is not None: self.detach(self.RIGHT_HAND)
 
@@ -80,7 +79,7 @@ class Torso:
                                         parentFramePosition=[0, 0, 0],
                                         childFramePosition=[0, 0, 0],
                                         physicsClientId=self.client)
-        p.changeConstraint(userConstraintUniqueId=constraint, maxForce=150, physicsClientId=self.client)
+        p.changeConstraint(userConstraintUniqueId=constraint, maxForce=force, physicsClientId=self.client)
 
         if limb_link == self.LEFT_HAND:
             self.lhand_cid = constraint

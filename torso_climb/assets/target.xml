@@ -8,17 +8,17 @@
     <link name="target">
         <visual>
             <geometry>
-                <box size="0.001 0.2 0.2" length="1"/>
+                <box size="0.2 0.2 0.2" length="1"/>
                 <origin rpy="0 0 0" xyz="0 0 0"/>
             </geometry>
             <material name="red"/>
         </visual>
-        <collision>
-             <geometry>
-                <box size="0.001 0.2 0.2" length="1"/>
-                <origin rpy="0 0 0" xyz="0 0 0"/>
-            </geometry>
-        </collision>
+<!--        <collision>-->
+<!--             <geometry>-->
+<!--                <box size="0.001 0.2 0.2" length="1"/>-->
+<!--                <origin rpy="0 0 0" xyz="0 0 0"/>-->
+<!--            </geometry>-->
+<!--        </collision>-->
         <inertial> 
             <mass value="0"/>
             <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
