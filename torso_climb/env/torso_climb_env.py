@@ -60,7 +60,7 @@ class TorsoClimbEnv(gym.Env):
 
     def step(self, action):
 
-        self.torso.apply_action(action)
+        # self.torso.apply_action(action)
 
         # Gather information about the env
         ob = self._get_obs()
@@ -94,7 +94,7 @@ class TorsoClimbEnv(gym.Env):
 
         flags = p.URDF_MAINTAIN_LINK_ORDER + p.URDF_USE_SELF_COLLISION + p.URDF_USE_SELF_COLLISION_EXCLUDE_ALL_PARENTS
         plane = p.loadURDF("plane.urdf", physicsClientId=self.client)
-        wall = Wall(client=self.client, pos=[0.5, 0, 2.5])
+        # wall = Wall(client=self.client, pos=[0.5, 0, 2.5])
         torso = Torso(client=self.client, pos=[0, 0, 1])
 
         target_1 = None
