@@ -26,7 +26,7 @@ class TorsoClimbEnv(gym.Env):
 
         # action space and observation space
         self.action_space = gym.spaces.Box(-1, 1, (6,), np.float32)
-        self.observation_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(2,), dtype=np.float32)
+        self.observation_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(224,), dtype=np.float32)
 
         self.np_random, _ = gym.utils.seeding.np_random()
 
@@ -38,18 +38,22 @@ class TorsoClimbEnv(gym.Env):
         p.resetDebugVisualizerCamera(cameraDistance=4, cameraYaw=-90, cameraPitch=0, cameraTargetPosition=[0, 0, 3], physicsClientId=self.client)
 
 
-    #  position of bodies,
-    # velocity,
-    # com_inertia,
-    # com_velocity,
+    # position,
+    # orientation,
+    # inertial frame pos,
+    # linear velocity,
+    # angular velocity
     def _get_obs(self):
         obs = []
 
-        joints = p.getNumJoints(self.torso.human)
-        state = p.getLinkStates(self.torso.human, linkIndices=self.torso.ordered_joint_indices, computeLinkVelocity=1, physicsClientId=self.client)
-        obs += state
+        states = p.getLinkStates(self.torso.human, linkIndices=self.torso.ordered_joint_indices, computeLinkVelocity=1,
+                                physicsClientId=self.client)
+        for state in states:
+            worldPos, worldOri, localInertialPos, _, _, _, linearVel, angVel = state
+            obs += (worldPos + worldOri + localInertialPos + linearVel + angVel)
 
-        return np.concatenate(([0.0], [0.1]), dtype=np.float32)
+        # Does it matter what order data is returned?
+        return np.array(obs, dtype=np.float32)
 
     def _get_info(self):
         return dict()
