@@ -31,12 +31,12 @@ class TorsoClimbEnv(gym.Env):
         self.np_random, _ = gym.utils.seeding.np_random()
 
         self.torso = None
+        self.targets = None
 
         # configure pybullet GUI
         p.setAdditionalSearchPath(pybullet_data.getDataPath(), physicsClientId=self.client)
         p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0, physicsClientId=self.client)
         p.resetDebugVisualizerCamera(cameraDistance=4, cameraYaw=-90, cameraPitch=0, cameraTargetPosition=[0, 0, 3], physicsClientId=self.client)
-
 
     # position,
     # orientation,
@@ -46,8 +46,7 @@ class TorsoClimbEnv(gym.Env):
     def _get_obs(self):
         obs = []
 
-        states = p.getLinkStates(self.torso.human, linkIndices=self.torso.ordered_joint_indices, computeLinkVelocity=1,
-                                physicsClientId=self.client)
+        states = p.getLinkStates(self.torso.human, linkIndices=self.torso.ordered_joint_indices, computeLinkVelocity=1, physicsClientId=self.client)
         for state in states:
             worldPos, worldOri, localInertialPos, _, _, _, linearVel, angVel = state
             obs += (worldPos + worldOri + localInertialPos + linearVel + angVel)
@@ -95,20 +94,19 @@ class TorsoClimbEnv(gym.Env):
         flags = p.URDF_MAINTAIN_LINK_ORDER + p.URDF_USE_SELF_COLLISION + p.URDF_USE_SELF_COLLISION_EXCLUDE_ALL_PARENTS
         plane = p.loadURDF("plane.urdf", physicsClientId=self.client)
         # wall = Wall(client=self.client, pos=[0.5, 0, 2.5])
-        torso = Torso(client=self.client, pos=[0, 0, 1])
+        torso = Torso(client=self.client, pos=[0, 0, 0.1])
 
-        target_1 = None
-        target_2 = None
-        for i in range(1):
-            target_1 = Target(client=self.client, pos=[0.1, 0.35, 1])
-            target_2 = Target(client=self.client, pos=[0.1, -0.35, 1])
+        self.targets = []
+        for i in range(1, 10):
+            self.targets.append(Target(client=self.client, pos=[0.3, 0.35, 0.5*i]))
+            self.targets.append(Target(client=self.client, pos=[0.3, -0.35, 0.5*i]))
 
         self.torso = torso
         ob = self._get_obs()
         info = self._get_info()
 
-        self.torso.force_attach(self.torso.LEFT_HAND, target_1.id, force=-1)
-        self.torso.force_attach(self.torso.RIGHT_HAND, target_2.id, force=-1)
+        # self.torso.force_attach(self.torso.LEFT_HAND, self.targets[0].id, force=-1)
+        #         # self.torso.force_attach(self.torso.RIGHT_HAND, target_2.id, force=-1)
 
         return np.array(ob, dtype=np.float32), info
 
@@ -117,4 +115,3 @@ class TorsoClimbEnv(gym.Env):
 
     def close(self):
         p.disconnect(physicsClientId=self.client)
-

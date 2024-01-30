@@ -35,7 +35,6 @@ class Torso:
         for j in range(p.getNumJoints(self.human, physicsClientId=client)):
             info = p.getJointInfo(self.human, j, physicsClientId=client)
             link_name = info[12].decode("ascii")
-            print(link_name)
             if link_name == "left_hand": self.LEFT_HAND = j
             if link_name == "right_hand": self.RIGHT_HAND = j
             self.ordered_joint_indices.append(j)
