@@ -26,7 +26,7 @@ class TorsoClimbEnv(gym.Env):
 
         # action space and observation space
         self.action_space = gym.spaces.Box(-1, 1, (6,), np.float32)
-        self.observation_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(224,), dtype=np.float32)
+        self.observation_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(316,), dtype=np.float32)
 
         self.np_random, _ = gym.utils.seeding.np_random()
 
@@ -43,6 +43,8 @@ class TorsoClimbEnv(gym.Env):
     # inertial frame pos,
     # linear velocity,
     # angular velocity
+    # target position and distance away from each effector
+    # effector target hold
     def _get_obs(self):
         obs = []
 
@@ -50,6 +52,20 @@ class TorsoClimbEnv(gym.Env):
         for state in states:
             worldPos, worldOri, localInertialPos, _, _, _, linearVel, angVel = state
             obs += (worldPos + worldOri + localInertialPos + linearVel + angVel)
+
+        # Find euclid distance between target and each effector
+        for target in self.targets:
+            targetPos, _ = p.getBasePositionAndOrientation(bodyUniqueId=target.id, physicsClientId=self.client)
+            states = p.getLinkStates(self.torso.human, linkIndices=[self.torso.LEFT_HAND, self.torso.RIGHT_HAND], physicsClientId=self.client)
+            effector_distances = []
+            for state in states:
+                effectorPos, _, _, _, _, _ = state
+                dist = np.linalg.norm(np.array(targetPos)-np.array(effectorPos))
+                effector_distances.append(dist)
+            target_obs = targetPos + tuple(effector_distances)
+            obs += target_obs
+
+        obs += (self.torso.lhand_cid, self.torso.rhand_cid)
 
         # Does it matter what order data is returned?
         return np.array(obs, dtype=np.float32)
@@ -59,7 +75,9 @@ class TorsoClimbEnv(gym.Env):
 
     def step(self, action):
 
-        # self.torso.apply_action(action)
+        p.stepSimulation(physicsClientId=self.client)
+
+        self.torso.apply_action(action)
 
         # Gather information about the env
         ob = self._get_obs()
@@ -72,8 +90,6 @@ class TorsoClimbEnv(gym.Env):
         truncated = False
 
         if self.render_mode == 'human': sleep(1 / 240)
-
-        p.stepSimulation(physicsClientId=self.client)
 
         return ob, reward, terminated, truncated, info
 

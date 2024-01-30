@@ -18,7 +18,7 @@ step = 0
 action = [0.0 for i in range(6)]
 
 while True:
-    # action = env.action_space.sample()
+    action = env.action_space.sample()
     obs, reward, done, truncated, info = env.step(action)
     score += reward
     step += 1

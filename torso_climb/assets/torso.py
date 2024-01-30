@@ -25,8 +25,8 @@ class Torso:
 
         self.RIGHT_HAND = -1
         self.LEFT_HAND = -1
-        self.rhand_cid = None
-        self.lhand_cid = None
+        self.rhand_cid = -1
+        self.lhand_cid = -1
 
         p.resetBasePositionAndOrientation(bodyUniqueId=self.id[0], posObj=pos, ornObj=[0.0, 0.0, 0.0, 1.0],
                                           physicsClientId=client)
@@ -66,8 +66,8 @@ class Torso:
 
     # TODO
     def force_attach(self, limb_link, target_id, force):
-        if limb_link == self.LEFT_HAND and self.lhand_cid is not None: self.detach(self.LEFT_HAND)
-        if limb_link == self.RIGHT_HAND and self.rhand_cid is not None: self.detach(self.RIGHT_HAND)
+        if limb_link == self.LEFT_HAND and self.lhand_cid != -1: self.detach(self.LEFT_HAND)
+        if limb_link == self.RIGHT_HAND and self.rhand_cid != -1: self.detach(self.RIGHT_HAND)
 
         constraint = p.createConstraint(parentBodyUniqueId=self.human,
                                         parentLinkIndex=limb_link,
@@ -91,8 +91,8 @@ class Torso:
     # !!! CURRENTLY TESTING CONSTRAINT ON LEFT HAND!!!!
     def attach(self, limb_link):
         # If already attached return
-        if limb_link == self.LEFT_HAND and self.lhand_cid is not None: return
-        if limb_link == self.RIGHT_HAND and self.rhand_cid is not None: return
+        if limb_link == self.LEFT_HAND and self.lhand_cid != -1: return
+        if limb_link == self.RIGHT_HAND and self.rhand_cid != -1: return
 
         body_count = p.getNumBodies(physicsClientId=self.client)
 
@@ -127,10 +127,12 @@ class Torso:
                     break
 
     def detach(self, limb_link):
-        if limb_link == self.LEFT_HAND and self.lhand_cid is not None:
+        if limb_link == self.LEFT_HAND and self.lhand_cid != -1:
             p.removeConstraint(userConstraintUniqueId=self.lhand_cid, physicsClientId=self.client)
-        elif limb_link == self.RIGHT_HAND and self.rhand_cid is not None:
+            self.lhand_cid = -1
+        elif limb_link == self.RIGHT_HAND and self.rhand_cid != -1:
             p.removeConstraint(userConstraintUniqueId=self.rhand_cid, physicsClientId=self.client)
+            self.rhand_cid = -1
 
     def get_observation(self):
         pass
