@@ -25,7 +25,7 @@ class TorsoClimbEnv(gym.Env):
             self.client = p.connect(p.DIRECT)
 
         # action space and observation space
-        self.action_space = gym.spaces.Box(-1, 1, (6,), np.float32)
+        self.action_space = gym.spaces.Box(-1, 1, (8,), np.float32)
         self.observation_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(316,), dtype=np.float32)
 
         self.np_random, _ = gym.utils.seeding.np_random()
@@ -55,14 +55,14 @@ class TorsoClimbEnv(gym.Env):
 
         # Find euclid distance between target and each effector
         for target in self.targets:
-            targetPos, _ = p.getBasePositionAndOrientation(bodyUniqueId=target.id, physicsClientId=self.client)
+            target_pos, _ = p.getBasePositionAndOrientation(bodyUniqueId=target.id, physicsClientId=self.client)
             states = p.getLinkStates(self.torso.human, linkIndices=[self.torso.LEFT_HAND, self.torso.RIGHT_HAND], physicsClientId=self.client)
             effector_distances = []
             for state in states:
                 effectorPos, _, _, _, _, _ = state
-                dist = np.linalg.norm(np.array(targetPos)-np.array(effectorPos))
+                dist = np.linalg.norm(np.array(target_pos)-np.array(effectorPos))
                 effector_distances.append(dist)
-            target_obs = targetPos + tuple(effector_distances)
+            target_obs = target_pos + tuple(effector_distances)
             obs += target_obs
 
         obs += (self.torso.lhand_cid, self.torso.rhand_cid)
