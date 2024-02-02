@@ -36,7 +36,8 @@ class TorsoClimbEnv(gym.Env):
         # configure pybullet GUI
         p.setAdditionalSearchPath(pybullet_data.getDataPath(), physicsClientId=self.client)
         p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0, physicsClientId=self.client)
-        p.resetDebugVisualizerCamera(cameraDistance=4, cameraYaw=-90, cameraPitch=0, cameraTargetPosition=[0, 0, 3], physicsClientId=self.client)
+        p.resetDebugVisualizerCamera(cameraDistance=4, cameraYaw=-90, cameraPitch=0, cameraTargetPosition=[0, 0, 3],
+                                     physicsClientId=self.client)
 
     # position,
     # orientation,
@@ -48,7 +49,8 @@ class TorsoClimbEnv(gym.Env):
     def _get_obs(self):
         obs = []
 
-        states = p.getLinkStates(self.torso.human, linkIndices=self.torso.ordered_joint_indices, computeLinkVelocity=1, physicsClientId=self.client)
+        states = p.getLinkStates(self.torso.human, linkIndices=self.torso.ordered_joint_indices, computeLinkVelocity=1,
+                                 physicsClientId=self.client)
         for state in states:
             worldPos, worldOri, localInertialPos, _, _, _, linearVel, angVel = state
             obs += (worldPos + worldOri + localInertialPos + linearVel + angVel)
@@ -56,11 +58,12 @@ class TorsoClimbEnv(gym.Env):
         # Find euclid distance between target and each effector
         for target in self.targets:
             target_pos, _ = p.getBasePositionAndOrientation(bodyUniqueId=target.id, physicsClientId=self.client)
-            states = p.getLinkStates(self.torso.human, linkIndices=[self.torso.LEFT_HAND, self.torso.RIGHT_HAND], physicsClientId=self.client)
+            states = p.getLinkStates(self.torso.human, linkIndices=[self.torso.LEFT_HAND, self.torso.RIGHT_HAND],
+                                     physicsClientId=self.client)
             effector_distances = []
             for state in states:
                 effectorPos, _, _, _, _, _ = state
-                dist = np.linalg.norm(np.array(target_pos)-np.array(effectorPos))
+                dist = np.linalg.norm(np.array(target_pos) - np.array(effectorPos))
                 effector_distances.append(dist)
             target_obs = target_pos + tuple(effector_distances)
             obs += target_obs
@@ -83,7 +86,7 @@ class TorsoClimbEnv(gym.Env):
         ob = self._get_obs()
         info = self._get_info()
 
-        reward = 0
+        reward = self.caclulate_reward()
 
         # Check termination conditions
         terminated = False
@@ -92,6 +95,38 @@ class TorsoClimbEnv(gym.Env):
         if self.render_mode == 'human': sleep(1 / 240)
 
         return ob, reward, terminated, truncated, info
+
+    def caclulate_reward(self):
+        # Reward if effectors close to hold
+        # Reward if moving towards goal
+        # Negative rewards?
+
+        # Get the closest length to hold
+        body_count = p.getNumBodies(physicsClientId=self.client)
+        left_hand_pos = \
+        p.getLinkState(bodyUniqueId=self.torso.human, linkIndex=self.torso.LEFT_HAND, physicsClientId=self.client)[0]
+        right_hand_pos = \
+        p.getLinkState(bodyUniqueId=self.torso.human, linkIndex=self.torso.RIGHT_HAND, physicsClientId=self.client)[0]
+
+        closest_effector = float('inf')
+
+        for body_id in range(body_count):
+            body_info = p.getBodyInfo(body_id, physicsClientId=self.client)
+            body_name = body_info[0].decode("utf-8")
+
+            if body_name == "target":
+                target_pos, _ = p.getBasePositionAndOrientation(bodyUniqueId=body_id, physicsClientId=self.client)
+                dist_left = np.linalg.norm(np.array(left_hand_pos) - np.array(target_pos))
+                dist_right = np.linalg.norm(np.array(right_hand_pos) - np.array(target_pos))
+                if dist_left < closest_effector:
+                    closest_effector = dist_left
+                if dist_right < closest_effector:
+                    closest_effector = dist_right
+
+        # 0.3 selected range to start rewarding
+        range_reward = 1 - closest_effector / 0.3
+    
+        return range_reward
 
     def seed(self, seed=None):
         self.np_random, seed = gym.utils.seeding.np_random(seed)
@@ -114,8 +149,8 @@ class TorsoClimbEnv(gym.Env):
 
         self.targets = []
         for i in range(1, 10):
-            self.targets.append(Target(client=self.client, pos=[0.3, 0.35, 0.5*i]))
-            self.targets.append(Target(client=self.client, pos=[0.3, -0.35, 0.5*i]))
+            self.targets.append(Target(client=self.client, pos=[0.3, 0.35, 0.5 * i]))
+            self.targets.append(Target(client=self.client, pos=[0.3, -0.35, 0.5 * i]))
 
         self.torso = torso
         ob = self._get_obs()
