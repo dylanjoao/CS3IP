@@ -5,6 +5,7 @@ import pendulum_climb
 import torso_climb
 import pybullet as p
 import time
+from stable_baselines3 import PPO
 
 env = gym.make('TorsoClimb-v0', render_mode='human')
 ob, info = env.reset(seed=42)
@@ -20,11 +21,22 @@ action = [0.0 for i in range(8)]
 action[6] = 1.0
 action[7] = 1.0
 
+# ====
+model = PPO.load(path="E:\\Programs\\GymRL\\PyBullet\\CS3IP\\CS3IP\\models\\PPO_3825000.zip", device="cuda", env=env)
+vec_env = model.get_env()
+obs = vec_env.reset()
+# ====
+
 while True:
     action = env.action_space.sample()
 
     if not pause:
-        obs, reward, done, truncated, info = env.step(action)
+        # ====
+        action, _state = model.predict(obs, deterministic=True)
+        obs, reward, done, info = vec_env.step(action)
+        # ====
+
+        # obs, reward, done, truncated, info = env.step(action)
         score += reward
         step += 1
 
@@ -34,6 +46,7 @@ while True:
         print(f"Score: {score}, Steps {step}")
         done = False
         truncated = False
+        pause = False
         score = 0
         step = 0
         env.reset()
@@ -44,9 +57,6 @@ while True:
 
     if done or truncated:
         pause = True
-        done = False
-        truncated = False
-        print(f"Episode over, Score: {score}, Steps {step}")
 
 
 env.close()

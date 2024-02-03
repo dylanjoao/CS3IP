@@ -123,9 +123,9 @@ class TorsoClimbEnv(gym.Env):
                 if dist_right < closest_effector:
                     closest_effector = dist_right
 
-        # 0.3 selected range to start rewarding
-        range_reward = 1 - closest_effector / 0.3
-    
+        # 0.06 selected range to start rewarding
+        range_reward = 1 - closest_effector / 0.06
+
         return range_reward
 
     def seed(self, seed=None):
@@ -144,13 +144,13 @@ class TorsoClimbEnv(gym.Env):
 
         flags = p.URDF_MAINTAIN_LINK_ORDER + p.URDF_USE_SELF_COLLISION + p.URDF_USE_SELF_COLLISION_EXCLUDE_ALL_PARENTS
         plane = p.loadURDF("plane.urdf", physicsClientId=self.client)
-        # wall = Wall(client=self.client, pos=[0.5, 0, 2.5])
+        wall = Wall(client=self.client, pos=[0.5, 0, 2.5])
         torso = Torso(client=self.client, pos=[0, 0, 0.1])
 
         self.targets = []
         for i in range(1, 10):
-            self.targets.append(Target(client=self.client, pos=[0.3, 0.35, 0.5 * i]))
-            self.targets.append(Target(client=self.client, pos=[0.3, -0.35, 0.5 * i]))
+            self.targets.append(Target(client=self.client, pos=[0.40, 0.35, 0.5 * i]))
+            self.targets.append(Target(client=self.client, pos=[0.40, -0.35, 0.5 * i]))
 
         self.torso = torso
         ob = self._get_obs()
