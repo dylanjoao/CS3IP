@@ -18,8 +18,8 @@ step = 0
 pause = False
 
 action = [0.0 for i in range(8)]
-action[6] = 1.0
-action[7] = 1.0
+# action[6] = 1.0
+# action[7] = 1.0
 
 # ====
 # model = PPO.load(path="E:\\Programs\\GymRL\\PyBullet\\CS3IP\\CS3IP\\models\\PPO_6375000_wall_too_low.zip", device="cuda", env=env)
@@ -30,6 +30,7 @@ action[7] = 1.0
 # Pause on end
 # Require backspace to restart
 # Print information on end or restart
+
 
 while True:
     # action = env.action_space.sample()
