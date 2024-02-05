@@ -119,7 +119,7 @@ class Torso:
                 target_pos, _ = p.getBasePositionAndOrientation(bodyUniqueId=body_id, physicsClientId=self.client)
                 dist = np.linalg.norm(np.array(limb_pos)-np.array(target_pos))
                 if dist < 0.06:
-                    self.force_attach(limb_link=limb_link, target_id=body_id, force=100)
+                    self.force_attach(limb_link=limb_link, target_id=body_id, force=200)
                     break
 
     def detach(self, limb_link):

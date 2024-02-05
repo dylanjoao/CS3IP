@@ -26,12 +26,13 @@ class TorsoClimbEnv(gym.Env):
 
         # action space and observation space
         self.action_space = gym.spaces.Box(-1, 1, (8,), np.float32)
-        self.observation_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(316,), dtype=np.float32)
+        self.observation_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(856,), dtype=np.float32)
 
         self.np_random, _ = gym.utils.seeding.np_random()
 
         self.torso = None
         self.targets = None
+        self.highest_point = float('-inf')
 
         # configure pybullet GUI
         p.setAdditionalSearchPath(pybullet_data.getDataPath(), physicsClientId=self.client)
@@ -101,32 +102,17 @@ class TorsoClimbEnv(gym.Env):
         # Reward if moving towards goal
         # Negative rewards?
 
-        # Get the closest length to hold
-        body_count = p.getNumBodies(physicsClientId=self.client)
-        left_hand_pos = \
-        p.getLinkState(bodyUniqueId=self.torso.human, linkIndex=self.torso.LEFT_HAND, physicsClientId=self.client)[0]
-        right_hand_pos = \
-        p.getLinkState(bodyUniqueId=self.torso.human, linkIndex=self.torso.RIGHT_HAND, physicsClientId=self.client)[0]
+        left_hand_pos = p.getLinkState(self.torso.human, self.torso.LEFT_HAND, physicsClientId=self.client)[0]
+        right_hand_pos = p.getLinkState(self.torso.human, self.torso.RIGHT_HAND, physicsClientId=self.client)[0]
 
-        closest_effector = float('inf')
+        # Highest point of z-value
+        highest_effector = np.max((left_hand_pos[2], right_hand_pos[2]))
+        multipler = 0.0
+        if highest_effector > self.highest_point:
+            multipler = 1.0
+            self.highest_point = highest_effector
 
-        for body_id in range(body_count):
-            body_info = p.getBodyInfo(body_id, physicsClientId=self.client)
-            body_name = body_info[0].decode("utf-8")
-
-            if body_name == "target":
-                target_pos, _ = p.getBasePositionAndOrientation(bodyUniqueId=body_id, physicsClientId=self.client)
-                dist_left = np.linalg.norm(np.array(left_hand_pos) - np.array(target_pos))
-                dist_right = np.linalg.norm(np.array(right_hand_pos) - np.array(target_pos))
-                if dist_left < closest_effector:
-                    closest_effector = dist_left
-                if dist_right < closest_effector:
-                    closest_effector = dist_right
-
-        # 0.06 selected range to start rewarding
-        range_reward = 1 - closest_effector / 0.06
-
-        return range_reward
+        return 1.0 * multipler
 
     def seed(self, seed=None):
         self.np_random, seed = gym.utils.seeding.np_random(seed)
@@ -145,19 +131,19 @@ class TorsoClimbEnv(gym.Env):
         flags = p.URDF_MAINTAIN_LINK_ORDER + p.URDF_USE_SELF_COLLISION + p.URDF_USE_SELF_COLLISION_EXCLUDE_ALL_PARENTS
         plane = p.loadURDF("plane.urdf", physicsClientId=self.client)
         wall = Wall(client=self.client, pos=[0.5, 0, 2.5])
-        torso = Torso(client=self.client, pos=[0, 0, 0.1])
+        torso = Torso(client=self.client, pos=[-0.25, 0, 0.15])
 
         self.targets = []
-        for i in range(1, 10):
-            self.targets.append(Target(client=self.client, pos=[0.40, 0.35, 0.5 * i]))
-            self.targets.append(Target(client=self.client, pos=[0.40, -0.35, 0.5 * i]))
+        for i in range(1, 15):  # Vertical
+            for j in range(1, 10):  # Horizontal
+                self.targets.append(Target(client=self.client, pos=[0.40, (j * 0.25) - 1.25, i * 0.25]))
 
         self.torso = torso
         ob = self._get_obs()
         info = self._get_info()
 
-        # self.torso.force_attach(self.torso.LEFT_HAND, self.targets[0].id, force=-1)
-        #         # self.torso.force_attach(self.torso.RIGHT_HAND, target_2.id, force=-1)
+        # self.torso.force_attach(self.torso.LEFT_HAND, self.targets[0].id, force=100)
+        # self.torso.force_attach(self.torso.RIGHT_HAND, self.targets[1].id, force=100)
 
         return np.array(ob, dtype=np.float32), info
 

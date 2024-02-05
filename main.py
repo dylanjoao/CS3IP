@@ -22,21 +22,25 @@ action[6] = 1.0
 action[7] = 1.0
 
 # ====
-model = PPO.load(path="E:\\Programs\\GymRL\\PyBullet\\CS3IP\\CS3IP\\models\\PPO_3825000.zip", device="cuda", env=env)
-vec_env = model.get_env()
-obs = vec_env.reset()
+# model = PPO.load(path="E:\\Programs\\GymRL\\PyBullet\\CS3IP\\CS3IP\\models\\PPO_6375000_wall_too_low.zip", device="cuda", env=env)
+# vec_env = model.get_env()
+# obs = vec_env.reset()
 # ====
 
+# Pause on end
+# Require backspace to restart
+# Print information on end or restart
+
 while True:
-    action = env.action_space.sample()
+    # action = env.action_space.sample()
 
     if not pause:
         # ====
-        action, _state = model.predict(obs, deterministic=True)
-        obs, reward, done, info = vec_env.step(action)
+        # action, _state = model.predict(obs, deterministic=True)
+        # obs, reward, done, info = vec_env.step(action)
         # ====
+        obs, reward, done, truncated, info = env.step(action)
 
-        # obs, reward, done, truncated, info = env.step(action)
         score += reward
         step += 1
 
@@ -50,6 +54,7 @@ while True:
         score = 0
         step = 0
         env.reset()
+
     # Pause on space
     if 32 in keys and keys[32]&p.KEY_WAS_TRIGGERED:
         pause = not pause

@@ -5,6 +5,7 @@ import stable_baselines3 as sb
 import os
 import argparse
 import pendulum_climb
+import torso_climb
 
 # Create directories to hold models and logs
 model_dir = "models"
@@ -12,6 +13,24 @@ log_dir = "logs"
 os.makedirs(model_dir, exist_ok=True)
 os.makedirs(log_dir, exist_ok=True)
 
+
+def make_env(env_id: str, rank: int, seed: int = 0):
+    """
+    Utility function for multiprocessed env.
+
+    :param env_id: the environment ID
+    :param num_env: the number of environments you wish to have in subprocesses
+    :param seed: the inital seed for RNG
+    :param rank: index of the subprocess
+    """
+
+    def _init():
+        env = gym.make(env_id)
+        env.reset(seed=seed + rank)
+        return env
+
+    set_random_seed(seed)
+    return _init
 
 def train(env, sb3_algo):
     if sb3_algo == 'SAC':
