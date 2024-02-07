@@ -34,6 +34,9 @@ class TorsoClimbEnv(gym.Env):
         self.targets = None
         self.highest_point = float('-inf')
 
+        self.current_stance = []
+        self.desired_stance = []
+
         # configure pybullet GUI
         p.setAdditionalSearchPath(pybullet_data.getDataPath(), physicsClientId=self.client)
         p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0, physicsClientId=self.client)
@@ -97,6 +100,10 @@ class TorsoClimbEnv(gym.Env):
 
         return ob, reward, terminated, truncated, info
 
+    # Naderi et al. (2019) Eq 2, A Reinforcement Learning Approach To Synthesizing Climbing Movements
+    def calculate_reward_eq1(self):
+        pass
+
     def caclulate_reward(self):
         # Reward if effectors close to hold
         # Reward if moving towards goal
@@ -124,9 +131,9 @@ class TorsoClimbEnv(gym.Env):
         p.resetSimulation(physicsClientId=self.client)
         p.setGravity(0, 0, -9.8, physicsClientId=self.client)
         p.setPhysicsEngineParameter(fixedTimeStep=1.0 / 60.,
-                                    solverResidualThreshold=1 - 10,
-                                    numSolverIterations=50,
-                                    numSubSteps=4)
+                                    numSolverIterations=100,
+                                    numSubSteps=10,
+                                    physicsClientId=self.client)
 
         flags = p.URDF_MAINTAIN_LINK_ORDER + p.URDF_USE_SELF_COLLISION + p.URDF_USE_SELF_COLLISION_EXCLUDE_ALL_PARENTS
         plane = p.loadURDF("plane.urdf", physicsClientId=self.client)
@@ -142,7 +149,7 @@ class TorsoClimbEnv(gym.Env):
         ob = self._get_obs()
         info = self._get_info()
 
-        # self.torso.force_attach(self.torso.LEFT_HAND, self.targets[0].id, force=100)
+        # self.torso.force_attach(self.torso.LEFT_HAND, self.targets[15].id, force=-1)
         # self.torso.force_attach(self.torso.RIGHT_HAND, self.targets[1].id, force=100)
 
         return np.array(ob, dtype=np.float32), info

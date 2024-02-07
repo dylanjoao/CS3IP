@@ -90,8 +90,11 @@ def test(env, sb3_algo, path_to_model):
         score += reward
         step += 1
 
+        # env.reset() auto called on vec_env?
         if done:
             print(f"Episode Over, Score: {score}, Steps {step}")
+            score = 0
+            step = 0
 
         # Reset on backspace
         keys = p.getKeyboardEvents()
