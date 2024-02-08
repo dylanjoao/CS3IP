@@ -25,7 +25,7 @@ class TorsoClimbEnv(gym.Env):
             self.client = p.connect(p.DIRECT)
 
         # action space and observation space
-        self.action_space = gym.spaces.Box(-1, 1, (8,), np.float32)
+        self.action_space = gym.spaces.Box(-1, 1, (6,), np.float32)
         self.observation_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(471,), dtype=np.float32)
 
         self.np_random, _ = gym.utils.seeding.np_random()
@@ -53,26 +53,26 @@ class TorsoClimbEnv(gym.Env):
     def _get_obs(self):
         obs = []
 
-        states = p.getLinkStates(self.torso.human, linkIndices=self.torso.ordered_joint_indices, computeLinkVelocity=1,
-                                 physicsClientId=self.client)
-        for state in states:
-            worldPos, worldOri, localInertialPos, _, _, _, linearVel, angVel = state
-            obs += (worldPos + worldOri + localInertialPos + linearVel + angVel)
-
-        # Find euclid distance between target and each effector
-        for target in self.targets:
-            target_pos, _ = p.getBasePositionAndOrientation(bodyUniqueId=target.id, physicsClientId=self.client)
-            states = p.getLinkStates(self.torso.human, linkIndices=[self.torso.LEFT_HAND, self.torso.RIGHT_HAND],
-                                     physicsClientId=self.client)
-            effector_distances = []
-            for state in states:
-                effectorPos, _, _, _, _, _ = state
-                dist = np.linalg.norm(np.array(target_pos) - np.array(effectorPos))
-                effector_distances.append(dist)
-            target_obs = target_pos + tuple(effector_distances)
-            obs += target_obs
-
-        obs += (self.torso.lhand_cid, self.torso.rhand_cid)
+        # states = p.getLinkStates(self.torso.human, linkIndices=self.torso.ordered_joint_indices, computeLinkVelocity=1,
+        #                          physicsClientId=self.client)
+        # for state in states:
+        #     worldPos, worldOri, localInertialPos, _, _, _, linearVel, angVel = state
+        #     obs += (worldPos + worldOri + localInertialPos + linearVel + angVel)
+        #
+        # # Find euclid distance between target and each effector
+        # for target in self.targets:
+        #     target_pos, _ = p.getBasePositionAndOrientation(bodyUniqueId=target.id, physicsClientId=self.client)
+        #     states = p.getLinkStates(self.torso.human, linkIndices=[self.torso.LEFT_HAND, self.torso.RIGHT_HAND],
+        #                              physicsClientId=self.client)
+        #     effector_distances = []
+        #     for state in states:
+        #         effectorPos, _, _, _, _, _ = state
+        #         dist = np.linalg.norm(np.array(target_pos) - np.array(effectorPos))
+        #         effector_distances.append(dist)
+        #     target_obs = target_pos + tuple(effector_distances)
+        #     obs += target_obs
+        #
+        # obs += (self.torso.lhand_cid, self.torso.rhand_cid)
 
         # Does it matter what order data is returned?
         return np.array(obs, dtype=np.float32)
@@ -109,17 +109,19 @@ class TorsoClimbEnv(gym.Env):
         # Reward if moving towards goal
         # Negative rewards?
 
-        left_hand_pos = p.getLinkState(self.torso.human, self.torso.LEFT_HAND, physicsClientId=self.client)[0]
-        right_hand_pos = p.getLinkState(self.torso.human, self.torso.RIGHT_HAND, physicsClientId=self.client)[0]
+        # left_hand_pos = p.getLinkState(self.torso.human, self.torso.LEFT_HAND, physicsClientId=self.client)[0]
+        # right_hand_pos = p.getLinkState(self.torso.human, self.torso.RIGHT_HAND, physicsClientId=self.client)[0]
+        #
+        # # Highest point of z-value
+        # highest_effector = np.max((left_hand_pos[2], right_hand_pos[2]))
+        # multipler = 0.0
+        # if highest_effector > self.highest_point:
+        #     multipler = 1.0
+        #     self.highest_point = highest_effector
+        #
+        # return 1.0 * multipler
 
-        # Highest point of z-value
-        highest_effector = np.max((left_hand_pos[2], right_hand_pos[2]))
-        multipler = 0.0
-        if highest_effector > self.highest_point:
-            multipler = 1.0
-            self.highest_point = highest_effector
-
-        return 1.0 * multipler
+        return 0.0
 
     def seed(self, seed=None):
         self.np_random, seed = gym.utils.seeding.np_random(seed)
@@ -138,7 +140,7 @@ class TorsoClimbEnv(gym.Env):
         flags = p.URDF_MAINTAIN_LINK_ORDER + p.URDF_USE_SELF_COLLISION + p.URDF_USE_SELF_COLLISION_EXCLUDE_ALL_PARENTS
         plane = p.loadURDF("plane.urdf", physicsClientId=self.client)
         wall = Wall(client=self.client, pos=[0.5, 0, 2.5])
-        torso = Torso(client=self.client, pos=[-0.25, 0, 0.15])
+        torso = Torso(client=self.client, pos=[-0.25, 0, 0.35])
 
         self.targets = []
         for i in range(1, 8):  # Vertical
@@ -149,8 +151,8 @@ class TorsoClimbEnv(gym.Env):
         ob = self._get_obs()
         info = self._get_info()
 
-        # self.torso.force_attach(self.torso.LEFT_HAND, self.targets[15].id, force=-1)
-        # self.torso.force_attach(self.torso.RIGHT_HAND, self.targets[1].id, force=100)
+        # self.torso.force_attach(self.torso.LEFT_HAND, self.targets[4].id, force=100)
+        self.torso.force_attach(self.torso.RIGHT_HAND, self.targets[2].id, force=-1)
 
         return np.array(ob, dtype=np.float32), info
 

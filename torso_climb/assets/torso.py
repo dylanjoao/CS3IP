@@ -7,19 +7,13 @@ import math
 # Reference https://www.gymlibrary.dev/environments/mujoco/humanoid/
 class Torso:
     def __init__(self, client, pos):
-        f_name = os.path.join(os.path.dirname(__file__), 'mjcf_torso.xml')
+        f_name = os.path.join(os.path.dirname(__file__), 'pyb_torso.xml')
 
         self.client = client
-        self.id = p.loadMJCF(mjcfFileName=f_name,
-                             flags=p.URDF_USE_SELF_COLLISION_EXCLUDE_ALL_PARENTS)
-        self.motors = []
-        self.motor_names = []
-        self.motor_power = []
-        self.ordered_joints = []
-        self.ordered_joint_indices = []
+        self.id = p.loadURDF(fileName=f_name, flags=p.URDF_MAINTAIN_LINK_ORDER+p.URDF_USE_SELF_COLLISION, basePosition=pos, physicsClientId=self.client)
 
         # https://github.com/bulletphysics/bullet3/blob/master/examples/pybullet/tensorflow/humanoid_running.py#L35
-        self.human = self.id[0]
+        self.human = self.id
         self.ordered_joints = []
         self.ordered_joint_indices = []
 
@@ -28,15 +22,13 @@ class Torso:
         self.rhand_cid = -1
         self.lhand_cid = -1
 
-        p.resetBasePositionAndOrientation(bodyUniqueId=self.id[0], posObj=pos, ornObj=[0.0, 0.0, 0.0, 1.0],
-                                          physicsClientId=client)
 
         jdict = {}
         for j in range(p.getNumJoints(self.human, physicsClientId=client)):
             info = p.getJointInfo(self.human, j, physicsClientId=client)
             link_name = info[12].decode("ascii")
-            if link_name == "left_hand": self.LEFT_HAND = j
-            if link_name == "right_hand": self.RIGHT_HAND = j
+            if link_name == "left_hand_tip": self.LEFT_HAND = j
+            if link_name == "right_hand_tip": self.RIGHT_HAND = j
             self.ordered_joint_indices.append(j)
 
             if info[2] != p.JOINT_REVOLUTE: continue
@@ -57,8 +49,8 @@ class Torso:
         return self.id, self.client
 
     def apply_action(self, actions):
-        body_actions = actions[0:6]
-        grasp_actions = actions[6:8]
+        body_actions = actions
+        # grasp_actions = actions[6:8]
 
         forces = [0.] * len(self.motors)
         for m in range(len(self.motors)):
@@ -67,17 +59,19 @@ class Torso:
             forces[m] = self.motor_power[m] * ac * 0.082
         p.setJointMotorControlArray(self.human, self.motors, controlMode=p.TORQUE_CONTROL, forces=forces)
 
-        # Left hand value
-        if grasp_actions[0] > 0.5:
-            self.attach(self.LEFT_HAND, target=2)
-        else:
-            self.detach(self.LEFT_HAND)
+        # # Left hand value
+        # if grasp_actions[0] > 0.5:
+        #     self.attach(self.LEFT_HAND, target=2)
+        # else:
+        #     self.detach(self.LEFT_HAND)
+        #
+        # # Right hand value
+        # if grasp_actions[1] > 0.5:
+        #     self.attach(self.RIGHT_HAND)
+        # else:
+        #     self.detach(self.RIGHT_HAND)
 
-        # Right hand value
-        if grasp_actions[1] > 0.5:
-            self.attach(self.RIGHT_HAND)
-        else:
-            self.detach(self.RIGHT_HAND)
+        pass
 
 
     # TODO
