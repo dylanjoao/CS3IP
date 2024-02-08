@@ -26,7 +26,7 @@ class TorsoClimbEnv(gym.Env):
 
         # action space and observation space
         self.action_space = gym.spaces.Box(-1, 1, (8,), np.float32)
-        self.observation_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(856,), dtype=np.float32)
+        self.observation_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(471,), dtype=np.float32)
 
         self.np_random, _ = gym.utils.seeding.np_random()
 
@@ -141,9 +141,9 @@ class TorsoClimbEnv(gym.Env):
         torso = Torso(client=self.client, pos=[-0.25, 0, 0.15])
 
         self.targets = []
-        for i in range(1, 15):  # Vertical
-            for j in range(1, 10):  # Horizontal
-                self.targets.append(Target(client=self.client, pos=[0.40, (j * 0.25) - 1.25, i * 0.25]))
+        for i in range(1, 8):  # Vertical
+            for j in range(1, 8):  # Horizontal
+                self.targets.append(Target(client=self.client, pos=[0.40, (j * 0.4) - 1.6, i * 0.4]))
 
         self.torso = torso
         ob = self._get_obs()
