@@ -32,6 +32,7 @@ class TorsoClimbEnv(gym.Env):
 
         self.torso = None
         self.targets = None
+        self.current_point = float('-inf')
         self.highest_point = float('-inf')
 
         self.current_stance = []
@@ -96,6 +97,10 @@ class TorsoClimbEnv(gym.Env):
         terminated = False
         truncated = False
 
+        if self.current_point < self.highest_point-0.009:
+            terminated = True
+        self.previous_point = self.highest_point
+
         if self.render_mode == 'human': sleep(1 / 240)
 
         return ob, reward, terminated, truncated, info
@@ -114,12 +119,14 @@ class TorsoClimbEnv(gym.Env):
 
         # Highest point of z-value
         highest_effector = np.max((left_hand_pos[2], right_hand_pos[2]))
-        multipler = 0.0
+        multiplier = 0.0
         if highest_effector > self.highest_point:
-            multipler = 1.0
+            multiplier = 1.0
             self.highest_point = highest_effector
 
-        return 1.0 * multipler
+        self.current_point = highest_effector
+
+        return 1.0 * multiplier
 
     def seed(self, seed=None):
         self.np_random, seed = gym.utils.seeding.np_random(seed)
@@ -140,6 +147,8 @@ class TorsoClimbEnv(gym.Env):
         wall = Wall(client=self.client, pos=[0.5, 0, 2.5])
         torso = Torso(client=self.client, pos=[-0.25, 0, 0.15])
 
+        self.current_point = float('-inf')
+        self.highest_point = float('-inf')
         self.targets = []
         for i in range(1, 8):  # Vertical
             for j in range(1, 8):  # Horizontal
