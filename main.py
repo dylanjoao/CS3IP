@@ -5,7 +5,7 @@ import pendulum_climb
 import torso_climb
 import pybullet as p
 import time
-from stable_baselines3 import PPO
+from stable_baselines3 import PPO, SAC
 
 env = gym.make('TorsoClimb-v0', render_mode='human')
 ob, info = env.reset(seed=42)
@@ -26,7 +26,7 @@ action += [1.0, 1.0]
 
 
 # ====
-# model = PPO.load(path="E:\\Programs\\GymRL\\PyBullet\\CS3IP\\CS3IP\\models\\PPO_6375000_wall_too_low.zip", device="cuda", env=env)
+# model = SAC.load(path="E:\\Programs\\GymRL\\PyBullet\\CS3IP\\CS3IP\\models\\SAC_375000.zip", device="cuda", env=env)
 # vec_env = model.get_env()
 # obs = vec_env.reset()
 # ====

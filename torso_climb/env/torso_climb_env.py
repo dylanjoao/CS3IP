@@ -33,6 +33,7 @@ class TorsoClimbEnv(gym.Env):
         self.floor = None
         self.torso = None
         self.targets = None
+        self.current_point = float('-inf')
         self.highest_point = float('-inf')
 
         self.effectors = []
@@ -62,6 +63,7 @@ class TorsoClimbEnv(gym.Env):
         terminated = False
         truncated = False
 
+
         if self.current_stance == self.desired_stance:
             terminated = True
 
@@ -84,6 +86,8 @@ class TorsoClimbEnv(gym.Env):
         wall = Wall(client=self.client, pos=[0.5, 0, 2.5])
         torso = Torso(client=self.client, pos=[0.1, 0, 0.35], ori=[0.707, 0, 0, 0.707])
 
+        self.current_point = float('-inf')
+        self.highest_point = float('-inf')
         self.targets = []
         for i in range(1, 8):  # Vertical
             for j in range(1, 8):  # Horizontal
