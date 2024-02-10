@@ -43,12 +43,62 @@ class TorsoClimbEnv(gym.Env):
         p.resetDebugVisualizerCamera(cameraDistance=4, cameraYaw=-90, cameraPitch=0, cameraTargetPosition=[0, 0, 3],
                                      physicsClientId=self.client)
 
-    # position,
-    # orientation,
-    # inertial frame pos,
-    # linear velocity,
-    # angular velocity
-    # target position and distance away from each effector
+    def step(self, action):
+
+        p.stepSimulation(physicsClientId=self.client)
+
+        self.torso.apply_action(action)
+        self.update_stance()
+
+        # Gather information about the env
+        ob = self._get_obs()
+        info = self._get_info()
+
+        reward = self.caclulate_reward()
+
+        # Check termination conditions
+        terminated = False
+        truncated = False
+
+        if self.render_mode == 'human': sleep(1 / 240)
+
+        return ob, reward, terminated, truncated, info
+
+    def reset(self, seed=None, options=None):
+        super().reset(seed=seed)
+
+        p.resetSimulation(physicsClientId=self.client)
+        p.setGravity(0, 0, -9.8, physicsClientId=self.client)
+        p.setPhysicsEngineParameter(fixedTimeStep=1.0 / 60.,
+                                    numSolverIterations=100,
+                                    numSubSteps=10,
+                                    physicsClientId=self.client)
+
+        flags = p.URDF_MAINTAIN_LINK_ORDER + p.URDF_USE_SELF_COLLISION + p.URDF_USE_SELF_COLLISION_EXCLUDE_ALL_PARENTS
+        plane = p.loadURDF("plane.urdf", physicsClientId=self.client)
+        wall = Wall(client=self.client, pos=[0.5, 0, 2.5])
+        torso = Torso(client=self.client, pos=[0.1, 0, 0.35], ori=[0.707, 0, 0, 0.707])
+
+        self.targets = []
+        for i in range(1, 8):  # Vertical
+            for j in range(1, 8):  # Horizontal
+                position = [0.40, (j * 0.4) - 1.6, i * 0.4]
+                self.targets.append(Target(client=self.client, pos=position))
+                position[2] += 0.05
+                p.addUserDebugText(text=f"{len(self.targets) - 1}", textPosition=position, textSize=0.7, lifeTime=0.0,
+                                   textColorRGB=[0.0, 0.0, 1.0], physicsClientId=self.client)
+
+        self.torso = torso
+        self.current_stance = [-1, -1]
+        ob = self._get_obs()
+        info = self._get_info()
+
+        # self.torso.force_attach(self.torso.LEFT_HAND, self.targets[11].id, force=100)
+        # self.torso.force_attach(self.torso.RIGHT_HAND, self.targets[2].id, force=-1)
+
+        return np.array(ob, dtype=np.float32), info
+
+    # pos, ori, inertial frame pos, linear vel, angular vel, target position and distance away from each effector
     # effector target hold
     def _get_obs(self):
         obs = []
@@ -77,31 +127,27 @@ class TorsoClimbEnv(gym.Env):
         # Does it matter what order data is returned?
         return np.array(obs, dtype=np.float32)
 
-    def _get_info(self):
-        return dict()
-
-    def step(self, action):
-
-        p.stepSimulation(physicsClientId=self.client)
-
-        self.torso.apply_action(action)
-
-        # Gather information about the env
-        ob = self._get_obs()
-        info = self._get_info()
-
-        reward = self.caclulate_reward()
-
-        # Check termination conditions
-        terminated = False
-        truncated = False
-
-        if self.render_mode == 'human': sleep(1 / 240)
-
-        return ob, reward, terminated, truncated, info
-
     # Naderi et al. (2019) Eq 2, A Reinforcement Learning Approach To Synthesizing Climbing Movements
     def calculate_reward_eq1(self):
+        pass
+
+    def update_stance(self):
+        self.update_stance_for_effector(0, self.torso.lhand_cid)
+        self.update_stance_for_effector(1, self.torso.rhand_cid)
+
+    def update_stance_for_effector(self, eff_index, eff_cid):
+        if eff_cid != -1:
+            target_id = p.getConstraintInfo(constraintUniqueId=eff_cid, physicsClientId=self.client)[2]
+            for i, target in enumerate(self.targets):
+                if target.id == target_id:
+                    self.current_stance[eff_index] = i
+                    return
+        self.current_stance[eff_index] = -1
+
+    def is_grounded(self):
+        pass
+
+    def is_touching_wall(self):
         pass
 
     def caclulate_reward(self):
@@ -123,44 +169,15 @@ class TorsoClimbEnv(gym.Env):
 
         return 0.0
 
-    def seed(self, seed=None):
-        self.np_random, seed = gym.utils.seeding.np_random(seed)
-        return [seed]
-
-    def reset(self, seed=None, options=None):
-        super().reset(seed=seed)
-
-        p.resetSimulation(physicsClientId=self.client)
-        p.setGravity(0, 0, -9.8, physicsClientId=self.client)
-        p.setPhysicsEngineParameter(fixedTimeStep=1.0 / 60.,
-                                    numSolverIterations=100,
-                                    numSubSteps=10,
-                                    physicsClientId=self.client)
-
-        flags = p.URDF_MAINTAIN_LINK_ORDER + p.URDF_USE_SELF_COLLISION + p.URDF_USE_SELF_COLLISION_EXCLUDE_ALL_PARENTS
-        plane = p.loadURDF("plane.urdf", physicsClientId=self.client)
-        wall = Wall(client=self.client, pos=[0.5, 0, 2.5])
-        torso = Torso(client=self.client, pos=[0.1, 0, 0.35], ori=[0.707, 0, 0, 0.707])
-
-        self.targets = []
-        for i in range(1, 8):  # Vertical
-            for j in range(1, 8):  # Horizontal
-                position = [0.40, (j * 0.4) - 1.6, i * 0.4]
-                self.targets.append(Target(client=self.client, pos=position))
-                position[2] += 0.05
-                p.addUserDebugText(text=f"{len(self.targets)-1}", textPosition=position, textSize=0.7, lifeTime=0.0, textColorRGB=[0.0, 0.0, 1.0], physicsClientId=self.client)
-
-        self.torso = torso
-        ob = self._get_obs()
-        info = self._get_info()
-
-        # self.torso.force_attach(self.torso.LEFT_HAND, self.targets[11].id, force=100)
-        # self.torso.force_attach(self.torso.RIGHT_HAND, self.targets[2].id, force=-1)
-
-        return np.array(ob, dtype=np.float32), info
-
     def render(self):
         pass
 
     def close(self):
         p.disconnect(physicsClientId=self.client)
+
+    def _get_info(self):
+        return dict()
+
+    def seed(self, seed=None):
+        self.np_random, seed = gym.utils.seeding.np_random(seed)
+        return [seed]

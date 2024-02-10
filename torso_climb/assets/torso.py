@@ -47,8 +47,6 @@ class Torso:
         self.motor_power += [75, 75]
         self.motors = [jdict[n] for n in self.motor_names]
 
-    def get_ids(self):
-        return self.id, self.client
 
     def apply_action(self, actions):
         body_actions = actions[0:4]
@@ -123,7 +121,3 @@ class Torso:
         elif limb_link == self.RIGHT_HAND and self.rhand_cid != -1:
             p.removeConstraint(userConstraintUniqueId=self.rhand_cid, physicsClientId=self.client)
             self.rhand_cid = -1
-
-    def get_observation(self):
-        pass
-
