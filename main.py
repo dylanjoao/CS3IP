@@ -17,9 +17,13 @@ score = 0
 step = 0
 pause = False
 
-action = [0.0 for i in range(8)]
-action[6] = 1.0
-action[7] = 1.0
+action = [0.0 for i in range(4)]
+action += [1.0, 1.0]
+
+# Test each joint
+# action = [0.0, 0.0, 0.0, 0.0]
+# action += [0.0, 0.0]
+
 
 # ====
 # model = SAC.load(path="E:\\Programs\\GymRL\\PyBullet\\CS3IP\\CS3IP\\models\\SAC_375000.zip", device="cuda", env=env)
@@ -47,7 +51,7 @@ while True:
 
     # Reset on backspace
     keys = p.getKeyboardEvents()
-    if 65305 in keys and keys[65305]&p.KEY_WAS_TRIGGERED:
+    if 65305 in keys and keys[65305] & p.KEY_WAS_TRIGGERED:
         print(f"Score: {score}, Steps {step}")
         done = False
         truncated = False
@@ -57,12 +61,11 @@ while True:
         env.reset()
 
     # Pause on space
-    if 32 in keys and keys[32]&p.KEY_WAS_TRIGGERED:
+    if 32 in keys and keys[32] & p.KEY_WAS_TRIGGERED:
         pause = not pause
         print("Paused" if pause else "Unpaused")
 
     if done or truncated:
         pause = True
-
 
 env.close()
