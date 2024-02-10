@@ -17,7 +17,7 @@ score = 0
 step = 0
 pause = False
 
-action = [0.0 for i in range(6)]
+action = [0.0 for i in range(8)]
 # action[6] = 1.0
 # action[7] = 1.0
 
@@ -33,7 +33,7 @@ action = [0.0 for i in range(6)]
 
 
 while True:
-    # action = env.action_space.sample()
+    action = env.action_space.sample()
 
     if not pause:
         # ====

@@ -6,11 +6,11 @@ import math
 
 # Reference https://www.gymlibrary.dev/environments/mujoco/humanoid/
 class Torso:
-    def __init__(self, client, pos):
-        f_name = os.path.join(os.path.dirname(__file__), 'pyb_torso.xml')
+    def __init__(self, client, pos, ori):
+        f_name = os.path.join(os.path.dirname(__file__), 'pyb_torso_2.xml')
 
         self.client = client
-        self.id = p.loadURDF(fileName=f_name, flags=p.URDF_MAINTAIN_LINK_ORDER+p.URDF_USE_SELF_COLLISION, basePosition=pos, physicsClientId=self.client)
+        self.id = p.loadURDF(fileName=f_name, flags=p.URDF_MAINTAIN_LINK_ORDER+p.URDF_USE_SELF_COLLISION, basePosition=pos, baseOrientation=ori, globalScaling=0.25, physicsClientId=self.client)
 
         # https://github.com/bulletphysics/bullet3/blob/master/examples/pybullet/tensorflow/humanoid_running.py#L35
         self.human = self.id
@@ -22,7 +22,6 @@ class Torso:
         self.rhand_cid = -1
         self.lhand_cid = -1
 
-
         jdict = {}
         for j in range(p.getNumJoints(self.human, physicsClientId=client)):
             info = p.getJointInfo(self.human, j, physicsClientId=client)
@@ -31,17 +30,20 @@ class Torso:
             if link_name == "right_hand_tip": self.RIGHT_HAND = j
             self.ordered_joint_indices.append(j)
 
-            if info[2] != p.JOINT_REVOLUTE: continue
             jname = info[1].decode("ascii")
             jdict[jname] = j
             lower, upper = (info[8], info[9])
-            self.ordered_joints.append((j, lower, upper))
 
-            p.setJointMotorControl2(self.human, j, controlMode=p.VELOCITY_CONTROL, force=0, physicsClientId=client)
+            if info[2] == p.JOINT_SPHERICAL:
+                targetPosition = [0, 0, 0, 1]
+                p.setJointMotorControlMultiDof(self.human, j, p.POSITION_CONTROL, targetPosition, targetVelocity=[0, 0, 0], positionGain=0, velocityGain=1, force=[0, 0, 0], physicsClientId=client)
+            elif info[2] == p.JOINT_REVOLUTE:
+                self.ordered_joints.append((j, lower, upper))
+                p.setJointMotorControl2(self.human, j, controlMode=p.VELOCITY_CONTROL, force=0, targetVelocity=0, physicsClientId=client)
 
-        self.motor_names = ["right_shoulder1", "right_shoulder2", "right_elbow"]
+        self.motor_names = ["right_shoulder", "right_elbow", "right_wrist"]
         self.motor_power = [75, 75, 75]
-        self.motor_names += ["left_shoulder1", "left_shoulder2", "left_elbow"]
+        self.motor_names += ["left_shoulder", "left_elbow", "left_wrist"]
         self.motor_power += [75, 75, 75]
         self.motors = [jdict[n] for n in self.motor_names]
 
@@ -83,8 +85,8 @@ class Torso:
                                         parentLinkIndex=limb_link,
                                         childBodyUniqueId=target_id,
                                         childLinkIndex=-1,
-                                        jointType=p.JOINT_FIXED,
-                                        jointAxis=[0, 0, 0],
+                                        jointType=p.JOINT_POINT2POINT,
+                                        jointAxis=[0, 90, 0],
                                         parentFramePosition=[0, 0, 0],
                                         childFramePosition=[0, 0, 0],
                                         physicsClientId=self.client)

@@ -140,19 +140,22 @@ class TorsoClimbEnv(gym.Env):
         flags = p.URDF_MAINTAIN_LINK_ORDER + p.URDF_USE_SELF_COLLISION + p.URDF_USE_SELF_COLLISION_EXCLUDE_ALL_PARENTS
         plane = p.loadURDF("plane.urdf", physicsClientId=self.client)
         wall = Wall(client=self.client, pos=[0.5, 0, 2.5])
-        torso = Torso(client=self.client, pos=[-0.25, 0, 0.35])
+        torso = Torso(client=self.client, pos=[0.1, 0, 0.35], ori=[0.707, 0, 0, 0.707])
 
         self.targets = []
         for i in range(1, 8):  # Vertical
             for j in range(1, 8):  # Horizontal
-                self.targets.append(Target(client=self.client, pos=[0.40, (j * 0.4) - 1.6, i * 0.4]))
+                position = [0.40, (j * 0.4) - 1.6, i * 0.4]
+                self.targets.append(Target(client=self.client, pos=position))
+                position[2] += 0.05
+                p.addUserDebugText(text=f"{len(self.targets)-1}", textPosition=position, textSize=0.7, lifeTime=0.0, textColorRGB=[0.0, 0.0, 1.0], physicsClientId=self.client)
 
         self.torso = torso
         ob = self._get_obs()
         info = self._get_info()
 
-        # self.torso.force_attach(self.torso.LEFT_HAND, self.targets[4].id, force=100)
-        self.torso.force_attach(self.torso.RIGHT_HAND, self.targets[2].id, force=-1)
+        # self.torso.force_attach(self.torso.LEFT_HAND, self.targets[4].id, force=-1)
+        # self.torso.force_attach(self.torso.RIGHT_HAND, self.targets[2].id, force=-1)
 
         return np.array(ob, dtype=np.float32), info
 
