@@ -41,18 +41,18 @@ class Torso:
                 self.ordered_joints.append((j, lower, upper))
                 p.setJointMotorControl2(self.human, j, controlMode=p.VELOCITY_CONTROL, force=0, targetVelocity=0, physicsClientId=client)
 
-        self.motor_names = ["right_shoulder", "right_elbow", "right_wrist"]
-        self.motor_power = [75, 75, 75]
-        self.motor_names += ["left_shoulder", "left_elbow", "left_wrist"]
-        self.motor_power += [75, 75, 75]
+        self.motor_names = ["right_shoulder", "right_elbow"]
+        self.motor_power = [75, 75]
+        self.motor_names += ["left_shoulder", "left_elbow"]
+        self.motor_power += [75, 75]
         self.motors = [jdict[n] for n in self.motor_names]
 
     def get_ids(self):
         return self.id, self.client
 
     def apply_action(self, actions):
-        body_actions = actions
-        # grasp_actions = actions[6:8]
+        body_actions = actions[0:4]
+        grasp_actions = actions[4:6]
 
         forces = [0.] * len(self.motors)
         for m in range(len(self.motors)):
@@ -61,22 +61,21 @@ class Torso:
             forces[m] = self.motor_power[m] * ac * 0.082
         p.setJointMotorControlArray(self.human, self.motors, controlMode=p.TORQUE_CONTROL, forces=forces)
 
-        # # Left hand value
-        # if grasp_actions[0] > 0.5:
-        #     self.attach(self.LEFT_HAND, target=2)
-        # else:
-        #     self.detach(self.LEFT_HAND)
-        #
-        # # Right hand value
-        # if grasp_actions[1] > 0.5:
-        #     self.attach(self.RIGHT_HAND)
-        # else:
-        #     self.detach(self.RIGHT_HAND)
+        # Left hand value
+        if grasp_actions[0] > 0.5:
+            self.attach(self.LEFT_HAND, target=2)
+        else:
+            self.detach(self.LEFT_HAND)
+
+        # Right hand value
+        if grasp_actions[1] > 0.5:
+            self.attach(self.RIGHT_HAND)
+        else:
+            self.detach(self.RIGHT_HAND)
 
         pass
 
 
-    # TODO
     def force_attach(self, limb_link, target_id, force=-1):
         if limb_link == self.LEFT_HAND and self.lhand_cid != -1: self.detach(self.LEFT_HAND)
         if limb_link == self.RIGHT_HAND and self.rhand_cid != -1: self.detach(self.RIGHT_HAND)
@@ -98,7 +97,6 @@ class Torso:
             self.rhand_cid = constraint
 
     # Attach to the closest target
-    # !!! CURRENTLY TESTING CONSTRAINT ON LEFT HAND!!!!
     def attach(self, limb_link, target=None):
         # If already attached return
         if limb_link == self.LEFT_HAND and self.lhand_cid != -1: return
