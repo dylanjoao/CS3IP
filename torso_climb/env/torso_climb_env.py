@@ -33,8 +33,6 @@ class TorsoClimbEnv(gym.Env):
         self.floor = None
         self.torso = None
         self.targets = None
-        self.current_point = float('-inf')
-        self.highest_point = float('-inf')
 
         self.effectors = []
         self.current_stance = []
@@ -63,7 +61,6 @@ class TorsoClimbEnv(gym.Env):
         terminated = False
         truncated = False
 
-
         if self.current_stance == self.desired_stance:
             terminated = True
 
@@ -76,18 +73,13 @@ class TorsoClimbEnv(gym.Env):
 
         p.resetSimulation(physicsClientId=self.client)
         p.setGravity(0, 0, -9.8, physicsClientId=self.client)
-        p.setPhysicsEngineParameter(fixedTimeStep=1.0 / 60.,
-                                    numSolverIterations=100,
-                                    numSubSteps=10,
-                                    physicsClientId=self.client)
+        p.setPhysicsEngineParameter(fixedTimeStep=1.0 / 60., numSolverIterations=100, numSubSteps=10, physicsClientId=self.client)
 
         flags = p.URDF_MAINTAIN_LINK_ORDER + p.URDF_USE_SELF_COLLISION + p.URDF_USE_SELF_COLLISION_EXCLUDE_ALL_PARENTS
         plane = p.loadURDF("plane.urdf", physicsClientId=self.client)
         wall = Wall(client=self.client, pos=[0.5, 0, 2.5])
         torso = Torso(client=self.client, pos=[0.1, 0, 0.35], ori=[0.707, 0, 0, 0.707])
 
-        self.current_point = float('-inf')
-        self.highest_point = float('-inf')
         self.targets = []
         for i in range(1, 8):  # Vertical
             for j in range(1, 8):  # Horizontal
@@ -102,7 +94,7 @@ class TorsoClimbEnv(gym.Env):
         self.effectors = [self.torso.LEFT_HAND, self.torso.RIGHT_HAND]
         self.current_stance = [-1, -1]
         self.desired_stance = [4, 2]  # TESTING
-        self.best_dist_to_stance = [float('inf'), float('inf')]
+        self.best_dist_to_stance = [9999, 9999]
 
         ob = self._get_obs()
         info = self._get_info()
@@ -213,25 +205,6 @@ class TorsoClimbEnv(gym.Env):
 
     def is_touching_wall(self):
         pass
-
-    def caclulate_reward(self):
-        # Reward if effectors close to hold
-        # Reward if moving towards goal
-        # Negative rewards?
-
-        # left_hand_pos = p.getLinkState(self.torso.human, self.torso.LEFT_HAND, physicsClientId=self.client)[0]
-        # right_hand_pos = p.getLinkState(self.torso.human, self.torso.RIGHT_HAND, physicsClientId=self.client)[0]
-        #
-        # # Highest point of z-value
-        # highest_effector = np.max((left_hand_pos[2], right_hand_pos[2]))
-        # multipler = 0.0
-        # if highest_effector > self.highest_point:
-        #     multipler = 1.0
-        #     self.highest_point = highest_effector
-        #
-        # return 1.0 * multipler
-
-        return 0.0
 
     def render(self):
         pass

@@ -30,6 +30,8 @@
 		<parent link="chest" />
 		<child link="right_shoulder" />
 		<origin rpy = "0 0 0" xyz = "-0.096200 0.974000 0.732440" />
+		<!-- Axis just here to suppress URDF errors, this gets overwritten in code-->
+		<axis xyz="0.00000 0.00000 0.00000"/>
 	</joint>
 	<link name="right_elbow" >
 		<inertial>
@@ -87,6 +89,8 @@
 		<parent link="chest" />
 		<child link="left_shoulder" />
 		<origin rpy = "0 0 0" xyz = "-0.096200 0.974000 -0.732440" />
+		<!-- Axis just here to suppress URDF errors, this gets overwritten in code-->
+		<axis xyz="0.00000 0.00000 0.00000"/>
 	</joint>
 	<link name="left_elbow" >
 		<inertial>
