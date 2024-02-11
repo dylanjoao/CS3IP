@@ -26,11 +26,12 @@ class TorsoClimbEnv(gym.Env):
 
         # action space and observation space
         self.action_space = gym.spaces.Box(-1, 1, (8,), np.float32)
-        self.observation_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(446,), dtype=np.float32)
+        self.observation_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(447,), dtype=np.float32)
 
         self.np_random, _ = gym.utils.seeding.np_random()
 
         self.floor = None
+        self.wall = None
         self.torso = None
         self.targets = None
 
@@ -84,12 +85,13 @@ class TorsoClimbEnv(gym.Env):
         self.targets = []
         for i in range(1, 8):  # Vertical
             for j in range(1, 8):  # Horizontal
-                position = [0.40, (j * 0.4) - 1.6, i * 0.4 + 0.2]
+                position = [0.40, (j * 0.4) - 1.6, i * 0.4 + 0.0]
                 self.targets.append(Target(client=self.client, pos=position))
                 position[2] += 0.05
                 p.addUserDebugText(text=f"{len(self.targets) - 1}", textPosition=position, textSize=0.7, lifeTime=0.0,
                                    textColorRGB=[0.0, 0.0, 1.0], physicsClientId=self.client)
 
+        self.wall = wall.id
         self.floor = plane
         self.torso = torso
         self.effectors = [self.torso.LEFT_HAND, self.torso.RIGHT_HAND]
@@ -113,7 +115,7 @@ class TorsoClimbEnv(gym.Env):
 
     # pos, ori, inertial frame pos, linear vel, angular vel, target position and distance away from each effector
     # effector target hold
-    # current stance, desired stance, difference in stances, best_dist_to_stance
+    # current stance, desired stance, difference in stances, best_dist_to_stance, touching ground and wall
     def _get_obs(self):
         obs = []
 
@@ -144,7 +146,8 @@ class TorsoClimbEnv(gym.Env):
         obs += self.desired_stance
         obs += [1 if self.current_stance[i] == self.desired_stance[i] else 0 for i in range(len(self.current_stance))]
         obs += self.best_dist_to_stance
-        obs += [1 if self.is_grounded() else 0]
+        obs += [1 if self.is_touching_body(self.floor) else 0]
+        obs += [1 if self.is_touching_body(self.wall) else 0]
 
         # Does it matter what order data is returned?
         return np.array(obs, dtype=np.float32)
@@ -176,7 +179,7 @@ class TorsoClimbEnv(gym.Env):
         is_closer = 1 if np.sum(current_dist_away) < np.sum(self.best_dist_to_stance) else 0
 
         # on ground might be too unforgiving for this environment
-        is_grounded = self.is_grounded()
+        is_grounded = self.is_touching_body(self.floor)
 
         if is_closer:
             for i, v in enumerate(self.best_dist_to_stance):
@@ -214,12 +217,9 @@ class TorsoClimbEnv(gym.Env):
                     return
         self.current_stance[eff_index] = -1
 
-    def is_grounded(self):
-        contact_points = p.getContactPoints(bodyA=self.torso.human, bodyB=self.floor, physicsClientId=self.client)
+    def is_touching_body(self, body):
+        contact_points = p.getContactPoints(bodyA=self.torso.human, bodyB=body, physicsClientId=self.client)
         return len(contact_points) > 0
-
-    def is_touching_wall(self):
-        pass
 
     def render(self):
         pass

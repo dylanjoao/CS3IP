@@ -8,19 +8,7 @@
 		<collision>
 			<origin rpy="-1.57080 0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 			<geometry>
-				<capsule length="0.14000" radius="0.07000"/>
-			</geometry>
-		</collision>
-		<collision>
-			<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.19000"/>
-			<geometry>
-				<sphere radius="0.09000"/>
-			</geometry>
-		</collision>
-		<collision>
-			<origin rpy="-1.57080 0.00000 0.00000" xyz="-0.01000 0.00000 -0.12000"/>
-			<geometry>
-				<box size="0.1 0.1 0.2" />
+				<box size="0.2 0.2 0.2" />
 			</geometry>
 		</collision>
 	</link>

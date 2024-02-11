@@ -10,7 +10,8 @@ class Torso:
         f_name = os.path.join(os.path.dirname(__file__), 'pyb_torso.xml')
 
         self.client = client
-        self.id = p.loadURDF(fileName=f_name, flags=p.URDF_MAINTAIN_LINK_ORDER+p.URDF_USE_SELF_COLLISION_EXCLUDE_ALL_PARENTS, basePosition=pos, baseOrientation=ori, globalScaling=1.0, physicsClientId=self.client)
+        self.id = p.loadURDF(fileName=f_name, flags=p.URDF_MAINTAIN_LINK_ORDER + p.URDF_USE_SELF_COLLISION_EXCLUDE_ALL_PARENTS, basePosition=pos, baseOrientation=ori,
+                             globalScaling=1.0, physicsClientId=self.client)
 
         # https://github.com/bulletphysics/bullet3/blob/master/examples/pybullet/tensorflow/humanoid_running.py#L35
         self.human = self.id
@@ -36,7 +37,8 @@ class Torso:
 
             if info[2] == p.JOINT_SPHERICAL:
                 targetPosition = [0, 0, 0, 1]
-                p.setJointMotorControlMultiDof(self.human, j, p.POSITION_CONTROL, targetPosition, targetVelocity=[0, 0, 0], positionGain=0, velocityGain=1, force=[0, 0, 0], physicsClientId=client)
+                p.setJointMotorControlMultiDof(self.human, j, p.POSITION_CONTROL, targetPosition, targetVelocity=[0, 0, 0], positionGain=0, velocityGain=1, force=[0, 0, 0],
+                                               physicsClientId=client)
             elif info[2] == p.JOINT_REVOLUTE:
                 self.ordered_joints.append((j, lower, upper))
                 p.setJointMotorControl2(self.human, j, controlMode=p.VELOCITY_CONTROL, force=0, targetVelocity=0, physicsClientId=client)
@@ -46,7 +48,6 @@ class Torso:
         self.motor_names += ["left_shoulder1", "left_shoulder2", "left_elbow"]
         self.motor_power += [75, 75, 75]
         self.motors = [jdict[n] for n in self.motor_names]
-
 
     def apply_action(self, actions):
         body_actions = actions[0:6]
@@ -70,9 +71,6 @@ class Torso:
             self.attach(self.RIGHT_HAND)
         else:
             self.detach(self.RIGHT_HAND)
-
-        pass
-
 
     def force_attach(self, limb_link, target_id, force=-1):
         if limb_link == self.LEFT_HAND and self.lhand_cid != -1: self.detach(self.LEFT_HAND)
@@ -109,7 +107,7 @@ class Torso:
 
             if body_name == "target":
                 target_pos, _ = p.getBasePositionAndOrientation(bodyUniqueId=body_id, physicsClientId=self.client)
-                dist = np.linalg.norm(np.array(limb_pos)-np.array(target_pos))
+                dist = np.linalg.norm(np.array(limb_pos) - np.array(target_pos))
                 if dist < 0.06:
                     self.force_attach(limb_link=limb_link, target_id=body_id, force=200)
                     break
