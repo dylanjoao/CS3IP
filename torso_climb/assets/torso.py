@@ -7,10 +7,10 @@ import math
 # Reference https://www.gymlibrary.dev/environments/mujoco/humanoid/
 class Torso:
     def __init__(self, client, pos, ori):
-        f_name = os.path.join(os.path.dirname(__file__), 'pyb_torso_2.xml')
+        f_name = os.path.join(os.path.dirname(__file__), 'pyb_torso.xml')
 
         self.client = client
-        self.id = p.loadURDF(fileName=f_name, flags=p.URDF_MAINTAIN_LINK_ORDER+p.URDF_USE_SELF_COLLISION, basePosition=pos, baseOrientation=ori, globalScaling=0.25, physicsClientId=self.client)
+        self.id = p.loadURDF(fileName=f_name, flags=p.URDF_MAINTAIN_LINK_ORDER+p.URDF_USE_SELF_COLLISION_EXCLUDE_ALL_PARENTS, basePosition=pos, baseOrientation=ori, globalScaling=1.0, physicsClientId=self.client)
 
         # https://github.com/bulletphysics/bullet3/blob/master/examples/pybullet/tensorflow/humanoid_running.py#L35
         self.human = self.id
@@ -41,16 +41,16 @@ class Torso:
                 self.ordered_joints.append((j, lower, upper))
                 p.setJointMotorControl2(self.human, j, controlMode=p.VELOCITY_CONTROL, force=0, targetVelocity=0, physicsClientId=client)
 
-        self.motor_names = ["right_shoulder", "right_elbow"]
-        self.motor_power = [75, 75]
-        self.motor_names += ["left_shoulder", "left_elbow"]
-        self.motor_power += [75, 75]
+        self.motor_names = ["right_shoulder1", "right_shoulder2", "right_elbow"]
+        self.motor_power = [75, 75, 75]
+        self.motor_names += ["left_shoulder1", "left_shoulder2", "left_elbow"]
+        self.motor_power += [75, 75, 75]
         self.motors = [jdict[n] for n in self.motor_names]
 
 
     def apply_action(self, actions):
-        body_actions = actions[0:4]
-        grasp_actions = actions[4:6]
+        body_actions = actions[0:6]
+        grasp_actions = actions[6:8]
 
         forces = [0.] * len(self.motors)
         for m in range(len(self.motors)):

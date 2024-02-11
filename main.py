@@ -17,7 +17,7 @@ score = 0
 step = 0
 pause = False
 
-action = [0.0 for i in range(4)]
+action = [0.0 for i in range(6)]
 action += [1.0, 1.0]
 
 # Test each joint

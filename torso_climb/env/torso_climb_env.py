@@ -25,8 +25,8 @@ class TorsoClimbEnv(gym.Env):
             self.client = p.connect(p.DIRECT)
 
         # action space and observation space
-        self.action_space = gym.spaces.Box(-1, 1, (6,), np.float32)
-        self.observation_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(381,), dtype=np.float32)
+        self.action_space = gym.spaces.Box(-1, 1, (8,), np.float32)
+        self.observation_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(446,), dtype=np.float32)
 
         self.np_random, _ = gym.utils.seeding.np_random()
 
@@ -37,6 +37,7 @@ class TorsoClimbEnv(gym.Env):
         self.effectors = []
         self.current_stance = []
         self.desired_stance = []
+        self.motion_path = []
         self.best_dist_to_stance = []
 
         # configure pybullet GUI
@@ -61,7 +62,7 @@ class TorsoClimbEnv(gym.Env):
         terminated = False
         truncated = False
 
-        if self.current_stance == self.desired_stance:
+        if len(self.motion_path) == 0:
             terminated = True
 
         if self.render_mode == 'human': sleep(1 / 240)
@@ -78,12 +79,12 @@ class TorsoClimbEnv(gym.Env):
         flags = p.URDF_MAINTAIN_LINK_ORDER + p.URDF_USE_SELF_COLLISION + p.URDF_USE_SELF_COLLISION_EXCLUDE_ALL_PARENTS
         plane = p.loadURDF("plane.urdf", physicsClientId=self.client)
         wall = Wall(client=self.client, pos=[0.5, 0, 2.5])
-        torso = Torso(client=self.client, pos=[0.1, 0, 0.35], ori=[0.707, 0, 0, 0.707])
+        torso = Torso(client=self.client, pos=[-0.1, 0, 0.2], ori=[0, 0, 0, 1])
 
         self.targets = []
         for i in range(1, 8):  # Vertical
             for j in range(1, 8):  # Horizontal
-                position = [0.40, (j * 0.4) - 1.6, i * 0.4]
+                position = [0.40, (j * 0.4) - 1.6, i * 0.4 + 0.2]
                 self.targets.append(Target(client=self.client, pos=position))
                 position[2] += 0.05
                 p.addUserDebugText(text=f"{len(self.targets) - 1}", textPosition=position, textSize=0.7, lifeTime=0.0,
@@ -93,8 +94,11 @@ class TorsoClimbEnv(gym.Env):
         self.torso = torso
         self.effectors = [self.torso.LEFT_HAND, self.torso.RIGHT_HAND]
         self.current_stance = [-1, -1]
-        self.desired_stance = [4, 2]  # TESTING
+        self.desired_stance = []
+        self.motion_path = [[4, 2], [11, 9], [18, 16], [25, 23], [32, 30], [39, 37], [45, 45]]
         self.best_dist_to_stance = [9999, 9999]
+
+        self.desired_stance = self.motion_path.pop(0)
 
         ob = self._get_obs()
         info = self._get_info()
@@ -140,6 +144,7 @@ class TorsoClimbEnv(gym.Env):
         obs += self.desired_stance
         obs += [1 if self.current_stance[i] == self.desired_stance[i] else 0 for i in range(len(self.current_stance))]
         obs += self.best_dist_to_stance
+        obs += [1 if self.is_grounded() else 0]
 
         # Does it matter what order data is returned?
         return np.array(obs, dtype=np.float32)
@@ -173,16 +178,26 @@ class TorsoClimbEnv(gym.Env):
         # on ground might be too unforgiving for this environment
         is_grounded = self.is_grounded()
 
-        for i, v in enumerate(self.best_dist_to_stance):
-            if current_dist_away[i] < v:
-                self.best_dist_to_stance[i] = current_dist_away[i]
+        if is_closer:
+            for i, v in enumerate(self.best_dist_to_stance):
+                if current_dist_away[i] < v:
+                    self.best_dist_to_stance[i] = current_dist_away[i]
 
-        reward = is_closer * np.sum(term_values)
+        reward = is_closer * np.sum(term_values) - is_grounded
         return reward
 
     def update_stance(self):
         self.get_stance_for_effector(0, self.torso.lhand_cid)
         self.get_stance_for_effector(1, self.torso.rhand_cid)
+
+        if self.current_stance == self.desired_stance and len(self.motion_path) != 0:
+            new_stance = self.motion_path.pop(0)
+            for i, v in enumerate(self.desired_stance):
+                p.changeVisualShape(objectUniqueId=self.targets[v].id, linkIndex=-1, rgbaColor=[1.0, 0.0, 0.0, 0.75], physicsClientId=self.client)
+            self.desired_stance = new_stance
+            for i, v in enumerate(self.desired_stance):
+                p.changeVisualShape(objectUniqueId=self.targets[v].id, linkIndex=-1, rgbaColor=[0.0, 0.7, 0.1, 0.75], physicsClientId=self.client)
+
 
         torso_pos = np.array(p.getBasePositionAndOrientation(bodyUniqueId=self.torso.human, physicsClientId=self.client)[0])
         torso_pos[1] += 0.15

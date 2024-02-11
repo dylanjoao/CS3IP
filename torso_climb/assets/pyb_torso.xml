@@ -20,7 +20,7 @@
 		<collision>
 			<origin rpy="-1.57080 0.00000 0.00000" xyz="-0.01000 0.00000 -0.12000"/>
 			<geometry>
-				<capsule length="0.12000" radius="0.06000"/>
+				<box size="0.1 0.1 0.2" />
 			</geometry>
 		</collision>
 	</link>
