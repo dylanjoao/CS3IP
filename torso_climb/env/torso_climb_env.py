@@ -60,11 +60,8 @@ class TorsoClimbEnv(gym.Env):
         reward = self.calculate_reward_eq1()
 
         # Check termination conditions
-        terminated = False
+        terminated = self.terminate_check()
         truncated = False
-
-        if len(self.motion_path) == 0:
-            terminated = True
 
         if self.render_mode == 'human': sleep(1 / 240)
 
@@ -97,7 +94,7 @@ class TorsoClimbEnv(gym.Env):
         self.effectors = [self.torso.LEFT_HAND, self.torso.RIGHT_HAND]
         self.current_stance = [-1, -1]
         self.desired_stance = []
-        self.motion_path = [[4, 2], [11, 9], [18, 16], [25, 23], [32, 30], [39, 37], [45, 45]]
+        self.motion_path = [[3, 3], [10, 10], [18, 16], [25, 23], [32, 30], [39, 37], [45, 45]]
         self.best_dist_to_stance = [9999, 9999]
 
         self.desired_stance = self.motion_path.pop(0)
@@ -152,10 +149,25 @@ class TorsoClimbEnv(gym.Env):
         # Does it matter what order data is returned?
         return np.array(obs, dtype=np.float32)
 
+    def terminate_check(self):
+        terminated = False
+
+        # Check if completed path
+        if len(self.motion_path) == 0:
+            terminated = True
+
+        # Check if anything but torso is touching ground
+        for i, v in enumerate(self.torso.ordered_joint_indices):
+            if self.is_touching_body(self.floor, v):
+                terminated = True
+                break
+
+        return terminated
+
     # Naderi et al. (2019) Eq 2, A Reinforcement Learning Approach To Synthesizing Climbing Movements
     def calculate_reward_eq1(self):
         # Tuning params
-        kappa = 0.5
+        kappa = 0.6
         sigma = 0.5
 
         states = p.getLinkStates(self.torso.human, linkIndices=[self.torso.LEFT_HAND, self.torso.RIGHT_HAND], physicsClientId=self.client)
@@ -168,7 +180,7 @@ class TorsoClimbEnv(gym.Env):
                 continue
             desired_eff_pos = p.getBasePositionAndOrientation(bodyUniqueId=self.targets[self.desired_stance[i]].id, physicsClientId=self.client)[0]
             current_eff_pos = states[i][0]
-            distance = np.linalg.norm(np.array(desired_eff_pos) - np.array(current_eff_pos))
+            distance = np.abs(np.linalg.norm(np.array(desired_eff_pos) - np.array(current_eff_pos)))
             current_dist_away[i] = distance
             reached = 1 if self.current_stance[i] == self.desired_stance[i] else 0
 
@@ -176,7 +188,14 @@ class TorsoClimbEnv(gym.Env):
 
         # I(d_t), is the stance closer than ever
         # Note: I use sum instead of comparing individual elements
-        is_closer = 1 if np.sum(current_dist_away) < np.sum(self.best_dist_to_stance) else 0
+        # is_closer = 1 if np.sum(current_dist_away) < np.sum(self.best_dist_to_stance) else 0
+
+        # I(d_t), is the stance closer than ever
+        # individually check if the distance on both hand is closer than before
+        is_closer = True
+        for i, v in enumerate(self.best_dist_to_stance):
+            if current_dist_away[i] > v:
+                is_closer = False
 
         # on ground might be too unforgiving for this environment
         is_grounded = self.is_touching_body(self.floor)
@@ -186,7 +205,7 @@ class TorsoClimbEnv(gym.Env):
                 if current_dist_away[i] < v:
                     self.best_dist_to_stance[i] = current_dist_away[i]
 
-        reward = is_closer * np.sum(term_values) - is_grounded
+        reward = is_closer * np.sum(term_values)
         return reward
 
     def update_stance(self):
@@ -204,7 +223,7 @@ class TorsoClimbEnv(gym.Env):
 
         torso_pos = np.array(p.getBasePositionAndOrientation(bodyUniqueId=self.torso.human, physicsClientId=self.client)[0])
         torso_pos[1] += 0.15
-        torso_pos[2] += 0.20
+        torso_pos[2] += 0.35
         p.addUserDebugText(text=f"{self.current_stance}", textPosition=torso_pos, textSize=1, lifeTime=1 / 30,
                            textColorRGB=[1.0, 0.0, 1.0], physicsClientId=self.client)
 
@@ -217,8 +236,8 @@ class TorsoClimbEnv(gym.Env):
                     return
         self.current_stance[eff_index] = -1
 
-    def is_touching_body(self, body):
-        contact_points = p.getContactPoints(bodyA=self.torso.human, bodyB=body, physicsClientId=self.client)
+    def is_touching_body(self, body, link_indexA=-1):
+        contact_points = p.getContactPoints(bodyA=self.torso.human, linkIndexA=link_indexA, bodyB=body, physicsClientId=self.client)
         return len(contact_points) > 0
 
     def render(self):

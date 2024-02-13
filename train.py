@@ -37,19 +37,23 @@ def make_env(env_id: str, rank: int, seed: int = 0):
     return _init
 
 
-def train(env_name, sb3_algo, workers):
+def train(env_name, sb3_algo, workers, path_to_model=None):
     vec_env = SubprocVecEnv([make_env(env_name, i) for i in range(workers)])
 
+    model = None
+
     if sb3_algo == 'SAC':
-        model = sb.SAC('MlpPolicy', vec_env, verbose=1, device='cuda', tensorboard_log=log_dir)
+        if path_to_model is None: model = sb.SAC('MlpPolicy', vec_env, verbose=1, device='cuda', tensorboard_log=log_dir)
+        else: model = sb.SAC.load(path_to_model, env=vec_env)
     elif sb3_algo == 'TD3':
-        model = sb.TD3('MlpPolicy', vec_env, verbose=1, device='cuda', tensorboard_log=log_dir)
+        if path_to_model is None: model = sb.TD3('MlpPolicy', vec_env, verbose=1, device='cuda', tensorboard_log=log_dir)
     elif sb3_algo == 'A2C':
         model = sb.A2C('MlpPolicy', vec_env, verbose=1, device='cuda', tensorboard_log=log_dir)
     elif sb3_algo == 'DQN':
         model = sb.DQN('MlpPolicy', vec_env, verbose=1, device='cuda', tensorboard_log=log_dir)
     elif sb3_algo == 'PPO':
-        model = sb.PPO('MlpPolicy', vec_env, verbose=1, device='cuda', tensorboard_log=log_dir)
+        if path_to_model is None: model = sb.PPO('MlpPolicy', vec_env, verbose=1, device='cuda', tensorboard_log=log_dir)
+        else: model = sb.PPO.load(path_to_model, env=vec_env)
     else:
         print('Algorithm not found')
         return
@@ -114,11 +118,17 @@ if __name__ == '__main__':
     parser.add_argument('sb3_algo', help='StableBaseline3 RL algorithm i.e. SAC, TD3')
     parser.add_argument('-w', '--workers', type=int)
     parser.add_argument('-t', '--train', action='store_true')
+    parser.add_argument('-f', '--file', required=False, default=None)
     parser.add_argument('-s', '--test', metavar='path_to_model')
     args = parser.parse_args()
 
     if args.train:
-        train(args.gymenv, args.sb3_algo, args.workers)
+        if args.file is None:
+            print(f'<< Training from scratch! >>')
+            train(args.gymenv, args.sb3_algo, args.workers)
+        elif os.path.isfile(args.file):
+            print(f'<< Continuing {args.file} >>')
+            train(args.gymenv, args.sb3_algo, args.workers, args.file)
 
     if args.test:
         if os.path.isfile(args.test):
