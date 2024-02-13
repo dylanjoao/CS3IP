@@ -17,7 +17,7 @@ score = 0
 step = 0
 pause = False
 
-action = [0.0 for i in range(4)]
+action = [0.0 for i in range(6)]
 action += [1.0, 1.0]
 
 # Test each joint
@@ -45,8 +45,6 @@ while True:
         # obs, reward, done, info = vec_env.step(action)
         # ====
         obs, reward, done, truncated, info = env.step(action)
-        end_obs = obs[-8:]
-        # print(f"{end_obs[0:2]} {end_obs[2:4]} {end_obs[4:6]} {end_obs[6:8]}")
 
         score += reward
         step += 1

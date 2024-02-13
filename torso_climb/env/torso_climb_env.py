@@ -25,18 +25,20 @@ class TorsoClimbEnv(gym.Env):
             self.client = p.connect(p.DIRECT)
 
         # action space and observation space
-        self.action_space = gym.spaces.Box(-1, 1, (6,), np.float32)
-        self.observation_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(381,), dtype=np.float32)
+        self.action_space = gym.spaces.Box(-1, 1, (8,), np.float32)
+        self.observation_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(447,), dtype=np.float32)
 
         self.np_random, _ = gym.utils.seeding.np_random()
 
         self.floor = None
+        self.wall = None
         self.torso = None
         self.targets = None
 
         self.effectors = []
         self.current_stance = []
         self.desired_stance = []
+        self.motion_path = []
         self.best_dist_to_stance = []
 
         # configure pybullet GUI
@@ -58,11 +60,8 @@ class TorsoClimbEnv(gym.Env):
         reward = self.calculate_reward_eq1()
 
         # Check termination conditions
-        terminated = False
+        terminated = self.terminate_check()
         truncated = False
-
-        if self.current_stance == self.desired_stance:
-            terminated = True
 
         if self.render_mode == 'human': sleep(1 / 240)
 
@@ -78,23 +77,27 @@ class TorsoClimbEnv(gym.Env):
         flags = p.URDF_MAINTAIN_LINK_ORDER + p.URDF_USE_SELF_COLLISION + p.URDF_USE_SELF_COLLISION_EXCLUDE_ALL_PARENTS
         plane = p.loadURDF("plane.urdf", physicsClientId=self.client)
         wall = Wall(client=self.client, pos=[0.5, 0, 2.5])
-        torso = Torso(client=self.client, pos=[0.1, 0, 0.35], ori=[0.707, 0, 0, 0.707])
+        torso = Torso(client=self.client, pos=[-0.1, 0, 0.2], ori=[0, 0, 0, 1])
 
         self.targets = []
         for i in range(1, 8):  # Vertical
             for j in range(1, 8):  # Horizontal
-                position = [0.40, (j * 0.4) - 1.6, i * 0.4]
+                position = [0.40, (j * 0.4) - 1.6, i * 0.4 + 0.0]
                 self.targets.append(Target(client=self.client, pos=position))
                 position[2] += 0.05
                 p.addUserDebugText(text=f"{len(self.targets) - 1}", textPosition=position, textSize=0.7, lifeTime=0.0,
                                    textColorRGB=[0.0, 0.0, 1.0], physicsClientId=self.client)
 
+        self.wall = wall.id
         self.floor = plane
         self.torso = torso
         self.effectors = [self.torso.LEFT_HAND, self.torso.RIGHT_HAND]
         self.current_stance = [-1, -1]
-        self.desired_stance = [4, 2]  # TESTING
+        self.desired_stance = []
+        self.motion_path = [[3, 3], [10, 10], [18, 16], [25, 23], [32, 30], [39, 37], [45, 45]]
         self.best_dist_to_stance = [9999, 9999]
+
+        self.desired_stance = self.motion_path.pop(0)
 
         ob = self._get_obs()
         info = self._get_info()
@@ -109,7 +112,7 @@ class TorsoClimbEnv(gym.Env):
 
     # pos, ori, inertial frame pos, linear vel, angular vel, target position and distance away from each effector
     # effector target hold
-    # current stance, desired stance, difference in stances, best_dist_to_stance
+    # current stance, desired stance, difference in stances, best_dist_to_stance, touching ground and wall
     def _get_obs(self):
         obs = []
 
@@ -140,14 +143,31 @@ class TorsoClimbEnv(gym.Env):
         obs += self.desired_stance
         obs += [1 if self.current_stance[i] == self.desired_stance[i] else 0 for i in range(len(self.current_stance))]
         obs += self.best_dist_to_stance
+        obs += [1 if self.is_touching_body(self.floor) else 0]
+        obs += [1 if self.is_touching_body(self.wall) else 0]
 
         # Does it matter what order data is returned?
         return np.array(obs, dtype=np.float32)
 
+    def terminate_check(self):
+        terminated = False
+
+        # Check if completed path
+        if len(self.motion_path) == 0:
+            terminated = True
+
+        # Check if anything but torso is touching ground
+        for i, v in enumerate(self.torso.ordered_joint_indices):
+            if self.is_touching_body(self.floor, v):
+                terminated = True
+                break
+
+        return terminated
+
     # Naderi et al. (2019) Eq 2, A Reinforcement Learning Approach To Synthesizing Climbing Movements
     def calculate_reward_eq1(self):
         # Tuning params
-        kappa = 0.5
+        kappa = 0.6
         sigma = 0.5
 
         states = p.getLinkStates(self.torso.human, linkIndices=[self.torso.LEFT_HAND, self.torso.RIGHT_HAND], physicsClientId=self.client)
@@ -160,7 +180,7 @@ class TorsoClimbEnv(gym.Env):
                 continue
             desired_eff_pos = p.getBasePositionAndOrientation(bodyUniqueId=self.targets[self.desired_stance[i]].id, physicsClientId=self.client)[0]
             current_eff_pos = states[i][0]
-            distance = np.linalg.norm(np.array(desired_eff_pos) - np.array(current_eff_pos))
+            distance = np.abs(np.linalg.norm(np.array(desired_eff_pos) - np.array(current_eff_pos)))
             current_dist_away[i] = distance
             reached = 1 if self.current_stance[i] == self.desired_stance[i] else 0
 
@@ -168,14 +188,22 @@ class TorsoClimbEnv(gym.Env):
 
         # I(d_t), is the stance closer than ever
         # Note: I use sum instead of comparing individual elements
-        is_closer = 1 if np.sum(current_dist_away) < np.sum(self.best_dist_to_stance) else 0
+        # is_closer = 1 if np.sum(current_dist_away) < np.sum(self.best_dist_to_stance) else 0
+
+        # I(d_t), is the stance closer than ever
+        # individually check if the distance on both hand is closer than before
+        is_closer = True
+        for i, v in enumerate(self.best_dist_to_stance):
+            if current_dist_away[i] > v:
+                is_closer = False
 
         # on ground might be too unforgiving for this environment
-        is_grounded = self.is_grounded()
+        is_grounded = self.is_touching_body(self.floor)
 
-        for i, v in enumerate(self.best_dist_to_stance):
-            if current_dist_away[i] < v:
-                self.best_dist_to_stance[i] = current_dist_away[i]
+        if is_closer:
+            for i, v in enumerate(self.best_dist_to_stance):
+                if current_dist_away[i] < v:
+                    self.best_dist_to_stance[i] = current_dist_away[i]
 
         reward = is_closer * np.sum(term_values)
         return reward
@@ -184,9 +212,18 @@ class TorsoClimbEnv(gym.Env):
         self.get_stance_for_effector(0, self.torso.lhand_cid)
         self.get_stance_for_effector(1, self.torso.rhand_cid)
 
+        if self.current_stance == self.desired_stance and len(self.motion_path) != 0:
+            new_stance = self.motion_path.pop(0)
+            for i, v in enumerate(self.desired_stance):
+                p.changeVisualShape(objectUniqueId=self.targets[v].id, linkIndex=-1, rgbaColor=[1.0, 0.0, 0.0, 0.75], physicsClientId=self.client)
+            self.desired_stance = new_stance
+            for i, v in enumerate(self.desired_stance):
+                p.changeVisualShape(objectUniqueId=self.targets[v].id, linkIndex=-1, rgbaColor=[0.0, 0.7, 0.1, 0.75], physicsClientId=self.client)
+
+
         torso_pos = np.array(p.getBasePositionAndOrientation(bodyUniqueId=self.torso.human, physicsClientId=self.client)[0])
         torso_pos[1] += 0.15
-        torso_pos[2] += 0.20
+        torso_pos[2] += 0.35
         p.addUserDebugText(text=f"{self.current_stance}", textPosition=torso_pos, textSize=1, lifeTime=1 / 30,
                            textColorRGB=[1.0, 0.0, 1.0], physicsClientId=self.client)
 
@@ -199,12 +236,9 @@ class TorsoClimbEnv(gym.Env):
                     return
         self.current_stance[eff_index] = -1
 
-    def is_grounded(self):
-        contact_points = p.getContactPoints(bodyA=self.torso.human, bodyB=self.floor, physicsClientId=self.client)
+    def is_touching_body(self, body, link_indexA=-1):
+        contact_points = p.getContactPoints(bodyA=self.torso.human, linkIndexA=link_indexA, bodyB=body, physicsClientId=self.client)
         return len(contact_points) > 0
-
-    def is_touching_wall(self):
-        pass
 
     def render(self):
         pass
