@@ -45,6 +45,26 @@ class TorsoClimbEnv(gym.Env):
         p.setAdditionalSearchPath(pybullet_data.getDataPath(), physicsClientId=self.client)
         p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0, physicsClientId=self.client)
         p.resetDebugVisualizerCamera(cameraDistance=4, cameraYaw=-90, cameraPitch=0, cameraTargetPosition=[0, 0, 3], physicsClientId=self.client)
+        p.setGravity(0, 0, -9.8, physicsClientId=self.client)
+        p.setPhysicsEngineParameter(fixedTimeStep=1.0 / 60., numSolverIterations=100, numSubSteps=10, physicsClientId=self.client)
+
+        plane = p.loadURDF("plane.urdf", physicsClientId=self.client)
+        wall = Wall(client=self.client, pos=[0.5, 0, 2.5])
+        torso = Torso(client=self.client, pos=[-0.1, 0, 0.20], ori=[0, 0, 0, 1])
+
+        self.wall = wall.id
+        self.floor = plane
+        self.torso = torso
+        self.effectors = [self.torso.LEFT_HAND, self.torso.RIGHT_HAND]
+
+        self.targets = []
+        for i in range(1, 8):  # Vertical
+            for j in range(1, 8):  # Horizontal
+                position = [0.40, (j * 0.4) - 1.6, i * 0.4 + 0.0]
+                self.targets.append(Target(client=self.client, pos=position))
+                position[2] += 0.05
+                p.addUserDebugText(text=f"{len(self.targets) - 1}", textPosition=position, textSize=0.7, lifeTime=0.0,
+                                   textColorRGB=[0.0, 0.0, 1.0], physicsClientId=self.client)
 
     def step(self, action):
 
@@ -65,33 +85,13 @@ class TorsoClimbEnv(gym.Env):
 
         if self.render_mode == 'human': sleep(1 / 240)
 
-        return ob, reward, terminated, truncated, info
+        return ob, reward, False, truncated, info
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
 
-        p.resetSimulation(physicsClientId=self.client)
-        p.setGravity(0, 0, -9.8, physicsClientId=self.client)
-        p.setPhysicsEngineParameter(fixedTimeStep=1.0 / 60., numSolverIterations=100, numSubSteps=10, physicsClientId=self.client)
+        self.torso.reset_state()
 
-        flags = p.URDF_MAINTAIN_LINK_ORDER + p.URDF_USE_SELF_COLLISION + p.URDF_USE_SELF_COLLISION_EXCLUDE_ALL_PARENTS
-        plane = p.loadURDF("plane.urdf", physicsClientId=self.client)
-        wall = Wall(client=self.client, pos=[0.5, 0, 2.5])
-        torso = Torso(client=self.client, pos=[-0.1, 0, 0.2], ori=[0, 0, 0, 1])
-
-        self.targets = []
-        for i in range(1, 8):  # Vertical
-            for j in range(1, 8):  # Horizontal
-                position = [0.40, (j * 0.4) - 1.6, i * 0.4 + 0.0]
-                self.targets.append(Target(client=self.client, pos=position))
-                position[2] += 0.05
-                p.addUserDebugText(text=f"{len(self.targets) - 1}", textPosition=position, textSize=0.7, lifeTime=0.0,
-                                   textColorRGB=[0.0, 0.0, 1.0], physicsClientId=self.client)
-
-        self.wall = wall.id
-        self.floor = plane
-        self.torso = torso
-        self.effectors = [self.torso.LEFT_HAND, self.torso.RIGHT_HAND]
         self.current_stance = [-1, -1]
         self.desired_stance = []
         self.motion_path = [[3, 3], [10, 10], [18, 16], [25, 23], [32, 30], [39, 37], [45, 45]]
@@ -102,8 +102,9 @@ class TorsoClimbEnv(gym.Env):
         ob = self._get_obs()
         info = self._get_info()
 
-        for i, v in enumerate(self.desired_stance):
-            p.changeVisualShape(objectUniqueId=self.targets[v].id, linkIndex=-1, rgbaColor=[0.0, 0.7, 0.1, 0.75], physicsClientId=self.client)
+        for i, target in enumerate(self.targets):
+            colour = [0.0, 0.7, 0.1, 0.75] if i in self.desired_stance else [1.0, 0, 0, 0.75]
+            p.changeVisualShape(objectUniqueId=target.id, linkIndex=-1, rgbaColor=colour, physicsClientId=self.client)
 
         # self.torso.force_attach(self.torso.LEFT_HAND, self.targets[11].id, force=100)
         # self.torso.force_attach(self.torso.RIGHT_HAND, self.targets[2].id, force=-1)
