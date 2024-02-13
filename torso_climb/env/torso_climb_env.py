@@ -173,7 +173,7 @@ class TorsoClimbEnv(gym.Env):
         states = p.getLinkStates(self.torso.human, linkIndices=[self.torso.LEFT_HAND, self.torso.RIGHT_HAND], physicsClientId=self.client)
 
         # Summation of distance away from hold
-        term_values = [0, 0]
+        sum_values = [0, 0]
         current_dist_away = [float('inf'), float('inf')]
         for i, effector in enumerate(self.effectors):
             if self.desired_stance[i] == -1:  # what to do here
@@ -184,7 +184,7 @@ class TorsoClimbEnv(gym.Env):
             current_dist_away[i] = distance
             reached = 1 if self.current_stance[i] == self.desired_stance[i] else 0
 
-            term_values[i] = kappa * np.exp(-1 * sigma * distance) + reached
+            sum_values[i] = kappa * np.exp(-1 * sigma * distance) + reached
 
         # I(d_t), is the stance closer than ever
         # Note: I use sum instead of comparing individual elements
@@ -205,7 +205,7 @@ class TorsoClimbEnv(gym.Env):
                 if current_dist_away[i] < v:
                     self.best_dist_to_stance[i] = current_dist_away[i]
 
-        reward = is_closer * np.sum(term_values)
+        reward = is_closer * np.sum(sum_values)
         return reward
 
     def update_stance(self):
