@@ -29,7 +29,7 @@ def make_env(env_id: str, rank: int, seed: int = 0):
     """
 
     def _init():
-        env = gym.make(env_id)
+        env = gym.make(env_id, max_ep_steps=1000)
         env.reset(seed=seed + rank)
         return env
 

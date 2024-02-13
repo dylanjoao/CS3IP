@@ -7,7 +7,7 @@ import pybullet as p
 import time
 from stable_baselines3 import PPO, SAC
 
-env = gym.make('TorsoClimb-v0', render_mode='human')
+env = gym.make('TorsoClimb-v0', render_mode='human', max_ep_steps=1000)
 ob, info = env.reset(seed=42)
 
 state = env.reset()
@@ -45,7 +45,6 @@ while True:
         # obs, reward, done, info = vec_env.step(action)
         # ====
         obs, reward, done, truncated, info = env.step(action)
-
         score += reward
         step += 1
 

@@ -16,8 +16,10 @@ from torso_climb.assets.wall import Wall
 class TorsoClimbEnv(gym.Env):
     metadata = {'render_modes': ['human'], 'render_fps': 60}
 
-    def __init__(self, render_mode: Optional[str] = None):
+    def __init__(self, render_mode: Optional[str] = None, max_ep_steps: Optional[int] = 1000):
         self.render_mode = render_mode
+        self.max_ep_steps = max_ep_steps
+        self.steps = 0
 
         if self.render_mode == 'human':
             self.client = p.connect(p.GUI)
@@ -81,20 +83,20 @@ class TorsoClimbEnv(gym.Env):
 
         # Check termination conditions
         terminated = self.terminate_check()
-        truncated = False
+        truncated = self.truncate_check()
 
         if self.render_mode == 'human': sleep(1 / 240)
 
-        return ob, reward, False, truncated, info
+        return ob, reward, terminated, truncated, info
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
 
         self.torso.reset_state()
-
+        self.steps = 0
         self.current_stance = [-1, -1]
         self.desired_stance = []
-        self.motion_path = [[3, 3], [10, 10], [18, 16], [25, 23], [32, 30], [39, 37], [45, 45]]
+        self.motion_path = [[3, 3], [10, 10]]
         self.best_dist_to_stance = [9999, 9999]
 
         self.desired_stance = self.motion_path.pop(0)
@@ -164,6 +166,11 @@ class TorsoClimbEnv(gym.Env):
                 break
 
         return terminated
+
+    def truncate_check(self):
+        self.steps += 1
+        truncated = True if self.steps >= self.max_ep_steps else False
+        return truncated
 
     # Naderi et al. (2019) Eq 2, A Reinforcement Learning Approach To Synthesizing Climbing Movements
     def calculate_reward_eq1(self):
@@ -248,7 +255,9 @@ class TorsoClimbEnv(gym.Env):
         p.disconnect(physicsClientId=self.client)
 
     def _get_info(self):
-        return dict()
+        info = dict()
+        info['is_success'] = False
+        return info
 
     def seed(self, seed=None):
         self.np_random, seed = gym.utils.seeding.np_random(seed)
