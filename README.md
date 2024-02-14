@@ -7,7 +7,9 @@ Python 3.8
     pip install tensorflow
     pip install pybullet
 
-![main.py](https://i.imgur.com/Sl7ygce.png)
+Pendulum Env | Torso Env
+:-:|:-:
+![main.py](https://i.imgur.com/Sl7ygce.png) | ![image](https://github.com/dylanjoao/CS3IP/assets/64186394/788419a4-299d-4dbf-bc33-f72d461d5c38) 
 
 ## DQN @ 3.4M steps (60 minutes)
 
