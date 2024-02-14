@@ -36,7 +36,7 @@ def make_env(env_id: str, rank: int, seed: int = 0):
 
     def _init():
         env = gym.make(env_id, max_ep_steps=1000)
-        env = Monitor(env)
+        env = Monitor(env, info_keywords=('steps_till_first_hold_reached_lh', 'steps_till_first_hold_reached_rh'))
         env.reset(seed=seed + rank)
         return env
 
@@ -56,7 +56,6 @@ def train(env_name, sb3_algo, workers, path_to_model=None):
         sync_tensorboard=True,  # auto-upload sb3's tensorboard metrics
         monitor_gym=False,  # auto-upload the videos of agents playing the game
         save_code=False,  # optional
-        # monitor="offline"
     )
 
     vec_env = SubprocVecEnv([make_env(env_name, i) for i in range(workers)], start_method="spawn")
@@ -78,15 +77,6 @@ def train(env_name, sb3_algo, workers, path_to_model=None):
     else:
         print('Algorithm not found')
         return
-
-    #
-    # TIMESTEPS = 25000
-    # iters = 0
-    # while True:
-    #     iters += 1
-    #
-    #     model.learn(total_timesteps=TIMESTEPS, reset_num_timesteps=False, progress_bar=True)
-    #     model.save(f"{model_dir}/{sb3_algo}_{TIMESTEPS * iters}")
 
     model.learn(
         total_timesteps=config["total_timesteps"],

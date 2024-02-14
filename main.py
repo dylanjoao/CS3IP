@@ -7,7 +7,7 @@ import pybullet as p
 import time
 from stable_baselines3 import PPO, SAC
 
-env = gym.make('TorsoClimb-v0', render_mode='human', max_ep_steps=1000)
+env = gym.make('TorsoClimb-v0', render_mode='human', max_ep_steps=10000)
 ob, info = env.reset(seed=42)
 
 state = env.reset()
