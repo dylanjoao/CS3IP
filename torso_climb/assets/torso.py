@@ -15,6 +15,8 @@ class Torso:
 
         # https://github.com/bulletphysics/bullet3/blob/master/examples/pybullet/tensorflow/humanoid_running.py#L35
         self.human = self.id
+        self.base_pos = []
+        self.base_ori = []
         self.ordered_joints = []
         self.ordered_joint_indices = []
 
@@ -22,6 +24,8 @@ class Torso:
         self.LEFT_HAND = -1
         self.rhand_cid = -1
         self.lhand_cid = -1
+
+        self.base_pos, self.base_ori = p.getBasePositionAndOrientation(bodyUniqueId=self.human, physicsClientId=self.client)
 
         jdict = {}
         for j in range(p.getNumJoints(self.human, physicsClientId=client)):
@@ -119,3 +123,10 @@ class Torso:
         elif limb_link == self.RIGHT_HAND and self.rhand_cid != -1:
             p.removeConstraint(userConstraintUniqueId=self.rhand_cid, physicsClientId=self.client)
             self.rhand_cid = -1
+
+    def reset_state(self):
+        self.detach(self.RIGHT_HAND)
+        self.detach(self.LEFT_HAND)
+        p.resetBasePositionAndOrientation(bodyUniqueId=self.human, posObj=self.base_pos, ornObj=self.base_ori, physicsClientId=self.client)
+        for i, v in enumerate(self.ordered_joint_indices):
+            p.resetJointState(self.human, v, targetValue=0.0, targetVelocity=0.0, physicsClientId=self.client)

@@ -6,8 +6,13 @@ import stable_baselines3 as sb
 import os
 import argparse
 
+from stable_baselines3.common.callbacks import EvalCallback
+from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import SubprocVecEnv
 from stable_baselines3.common.utils import set_random_seed
+
+import wandb
+from wandb.integration.sb3 import WandbCallback
 
 import pendulum_climb
 import torso_climb
@@ -17,6 +22,7 @@ model_dir = "models"
 log_dir = "logs"
 os.makedirs(model_dir, exist_ok=True)
 os.makedirs(log_dir, exist_ok=True)
+
 
 def make_env(env_id: str, rank: int, seed: int = 0):
     """
@@ -29,7 +35,8 @@ def make_env(env_id: str, rank: int, seed: int = 0):
     """
 
     def _init():
-        env = gym.make(env_id)
+        env = gym.make(env_id, max_ep_steps=1000)
+        env = Monitor(env)
         env.reset(seed=seed + rank)
         return env
 
@@ -38,11 +45,28 @@ def make_env(env_id: str, rank: int, seed: int = 0):
 
 
 def train(env_name, sb3_algo, workers, path_to_model=None):
-    vec_env = SubprocVecEnv([make_env(env_name, i) for i in range(workers)])
+    config = {
+        "policy_type": "MlpPolicy",
+        "total_timesteps": 50000000,
+        "env_name": env_name,
+    }
+    run = wandb.init(
+        project="sb3",
+        config=config,
+        sync_tensorboard=True,  # auto-upload sb3's tensorboard metrics
+        monitor_gym=False,  # auto-upload the videos of agents playing the game
+        save_code=False,  # optional
+        # monitor="offline"
+    )
+
+    vec_env = SubprocVecEnv([make_env(env_name, i) for i in range(workers)], start_method="spawn")
 
     model = None
 
-    if sb3_algo == 'SAC':
+    if sb3_algo == 'PPO':
+        if path_to_model is None: model = sb.PPO('MlpPolicy', vec_env, verbose=1, device='cuda', tensorboard_log=log_dir)
+        else: model = sb.PPO.load(path_to_model, env=vec_env)
+    elif sb3_algo == 'SAC':
         if path_to_model is None: model = sb.SAC('MlpPolicy', vec_env, verbose=1, device='cuda', tensorboard_log=log_dir)
         else: model = sb.SAC.load(path_to_model, env=vec_env)
     elif sb3_algo == 'TD3':
@@ -51,20 +75,30 @@ def train(env_name, sb3_algo, workers, path_to_model=None):
         model = sb.A2C('MlpPolicy', vec_env, verbose=1, device='cuda', tensorboard_log=log_dir)
     elif sb3_algo == 'DQN':
         model = sb.DQN('MlpPolicy', vec_env, verbose=1, device='cuda', tensorboard_log=log_dir)
-    elif sb3_algo == 'PPO':
-        if path_to_model is None: model = sb.PPO('MlpPolicy', vec_env, verbose=1, device='cuda', tensorboard_log=log_dir)
-        else: model = sb.PPO.load(path_to_model, env=vec_env)
     else:
         print('Algorithm not found')
         return
 
-    TIMESTEPS = 25000
-    iters = 0
-    while True:
-        iters += 1
+    #
+    # TIMESTEPS = 25000
+    # iters = 0
+    # while True:
+    #     iters += 1
+    #
+    #     model.learn(total_timesteps=TIMESTEPS, reset_num_timesteps=False, progress_bar=True)
+    #     model.save(f"{model_dir}/{sb3_algo}_{TIMESTEPS * iters}")
 
-        model.learn(total_timesteps=TIMESTEPS, reset_num_timesteps=False)
-        model.save(f"{model_dir}/{sb3_algo}_{TIMESTEPS * iters}")
+    model.learn(
+        total_timesteps=config["total_timesteps"],
+        progress_bar=True,
+        callback=WandbCallback(
+            gradient_save_freq=5000,
+            model_save_freq=5000,
+            model_save_path=f"{model_dir}/{run.id}",
+            verbose=2,
+        ),
+    )
+    run.finish()
 
 
 
