@@ -36,9 +36,9 @@ def make_env(env_id: str, rank: int, seed: int = 0):
 
     def _init():
         env = gym.make(env_id, max_ep_steps=1000)
-        env = Monitor(env, info_keywords=('steps_till_first_hold_reached_lh', 'steps_till_first_hold_reached_rh'))
-        env.reset(seed=seed + rank)
-        return env
+        m_env = Monitor(env, info_keywords=('steps_till_first_hold_reached_lh', 'steps_till_first_hold_reached_rh'))
+        m_env.reset(seed=seed + rank)
+        return m_env
 
     set_random_seed(seed)
     return _init

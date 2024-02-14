@@ -105,7 +105,6 @@ class TorsoClimbEnv(gym.Env):
         self.torso.reset_state()
         self.steps = 0
         self.current_stance = [-1, -1]
-        self.desired_stance = []
         self.motion_path = [[3, 3], [10, 10]]
         self.desired_stance = self.motion_path.pop(0)
         self.best_dist_to_stance = self.get_distance_from_desired_stance()
@@ -220,13 +219,18 @@ class TorsoClimbEnv(gym.Env):
         self.get_stance_for_effector(0, self.torso.lhand_cid)
         self.get_stance_for_effector(1, self.torso.rhand_cid)
 
+        # Check if stance complete
         if self.current_stance == self.desired_stance and len(self.motion_path) != 0:
             new_stance = self.motion_path.pop(0)
+
             for i, v in enumerate(self.desired_stance):
                 p.changeVisualShape(objectUniqueId=self.targets[v].id, linkIndex=-1, rgbaColor=[1.0, 0.0, 0.0, 0.75], physicsClientId=self.client)
             self.desired_stance = new_stance
             for i, v in enumerate(self.desired_stance):
                 p.changeVisualShape(objectUniqueId=self.targets[v].id, linkIndex=-1, rgbaColor=[0.0, 0.7, 0.1, 0.75], physicsClientId=self.client)
+
+            # Reset best_dist
+            self.best_dist_to_stance = self.get_distance_from_desired_stance()
 
         if self.render_mode == 'human':
             torso_pos = np.array(p.getBasePositionAndOrientation(bodyUniqueId=self.torso.human, physicsClientId=self.client)[0])
