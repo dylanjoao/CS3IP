@@ -1,0 +1,13 @@
+<mujoco model="hold">
+	<default name="hold">
+		<geom type="capsule" size="0.0075" />
+	</default>
+	<worldbody>
+		<body name="hold" pos="0.0 0.0 0.0">
+			<geom name="hold_seg_1" type="capsule" fromto=".05 .05 .0 -.05 .05 .0"/>
+			<geom name="hold_seg_2" type="capsule" fromto=".05 .05 .0 .05 -.05 .0"/>
+			<geom name="hold_seg_3" type="capsule" fromto="-.05 -.05 .0 -.05 .05 .0"/>
+			<geom name="hold_seg_4" type="capsule" fromto="-.05 -.05 .0 .05 -.05 .0"/>
+		</body>
+	</worldbody>
+</mujoco>
