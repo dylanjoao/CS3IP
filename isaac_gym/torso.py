@@ -54,16 +54,12 @@ if viewer is None:
     quit()
 
 torso_pose = gymapi.Transform()
-torso_pose.p = gymapi.Vec3(0.0, 0.0, 1.0)
+torso_pose.p = gymapi.Vec3(0.3, 0.0, 0.5)
 torso_pose.r = gymapi.Quat(0.0, 0.0, 0.0, 1.0)
 
 wall_pose = gymapi.Transform()
 wall_pose.p = gymapi.Vec3(1.0, 0.0, 1.5)
 wall_pose.r = gymapi.Quat(0.0, 0.0, 0.0, 1.0)
-
-hold_pose = gymapi.Transform()
-hold_pose.p = gymapi.Vec3(0.0, 0.0, 0.0)
-hold_pose.r = gymapi.Quat(0.0, 0.0, 0.0, 1.0)
 
 ### Asset handling
 asset_root = "./assets"
@@ -91,6 +87,8 @@ gym.subscribe_viewer_keyboard_event(viewer, gymapi.KEY_R, "reset")
 envs = []
 
 
+
+
 print("Creating %d environments" % num_envs)
 num_per_row = int(math.sqrt(num_envs))
 
@@ -100,15 +98,27 @@ for i in range(num_envs):
     env = gym.create_env(sim, env_lower, env_upper, num_per_row)
     envs.append(env)
 
-    # torso_handle = gym.create_actor(env, torso_asset, torso_pose, "torso", i, 0)
+    torso_handle = gym.create_actor(env, torso_asset, torso_pose, "torso", i, 0)
     wall_handle = gym.create_actor(env, wall_asset, wall_pose, "wall", i, 0)
-    hold_handle = gym.create_actor(env, hold_asset, hold_pose, "hold", i, 0)
+
+
+    hold_pose = gymapi.Transform()
+    hold_pose.p = gymapi.Vec3(.975, 0.0, 0.0)
+    hold_pose.r = gymapi.Quat(0.0, 0.0, 0.0, 1.0)
+    
+    num_holds = 5
+    for j in range(num_holds):
+        hold_pose.p.z = j * 0.5 + 0.5
+        hold_handle = gym.create_actor(env, hold_asset, hold_pose, "hold", i, 0)
+        gym.set_rigid_body_color(env, hold_handle, 0, gymapi.MESH_VISUAL_AND_COLLISION, gymapi.Vec3(1, 0, 0))
 
 gym.viewer_camera_look_at(viewer, envs[0], gymapi.Vec3(-3, -3, 3), gymapi.Vec3(1.5, 1, 0))
 
 initial_state = np.copy(gym.get_sim_rigid_body_states(sim, gymapi.STATE_ALL))
 
 print(gym.get_sim_actor_count(sim))
+
+
 
 while not gym.query_viewer_has_closed(viewer):
 
