@@ -14,9 +14,9 @@ from torso_climb.assets.wall import Wall
 
 
 class TorsoClimbEnv(gym.Env):
-    metadata = {'render_modes': ['human'], 'render_fps': 60}
+    metadata = {'render_modes': ['human', 'rgb_array'], 'render_fps': 60}
 
-    def __init__(self, render_mode: Optional[str] = None, max_ep_steps: Optional[int] = 1000):
+    def __init__(self, render_mode: Optional[str] = None, max_ep_steps: Optional[int] = 600):
         self.render_mode = render_mode
         self.max_ep_steps = max_ep_steps
         self.steps = 0
@@ -40,12 +40,12 @@ class TorsoClimbEnv(gym.Env):
         self.effectors = []
         self.current_stance = []
         self.desired_stance = []
+        self.desired_stance_index = 0
         self.motion_path = []
         self.best_dist_to_stance = []
 
         # INFO DATA
-        self.steps_till_first_grasp_left_hand = -1
-        self.steps_till_first_grasp_right_hand = -1
+        self.steps_till_success = 0
         #
 
         # configure pybullet GUI
@@ -56,7 +56,7 @@ class TorsoClimbEnv(gym.Env):
         p.setPhysicsEngineParameter(fixedTimeStep=1.0 / 60., numSolverIterations=100, numSubSteps=10, physicsClientId=self.client)
 
         plane = p.loadURDF("plane.urdf", physicsClientId=self.client)
-        wall = Wall(client=self.client, pos=[0.5, 0, 2.5])
+        wall = Wall(client=self.client, pos=[0.48, 0, 2.5])
         torso = Torso(client=self.client, pos=[-0.1, 0, 0.20], ori=[0, 0, 0, 1])
 
         self.wall = wall.id
@@ -73,10 +73,6 @@ class TorsoClimbEnv(gym.Env):
                 p.addUserDebugText(text=f"{len(self.targets) - 1}", textPosition=position, textSize=0.7, lifeTime=0.0,
                                    textColorRGB=[0.0, 0.0, 1.0], physicsClientId=self.client)
 
-        # INFO DATA
-        self.steps_till_first_grasp_left_hand = -1
-        self.steps_till_first_grasp_right_hand = -1
-        #
 
     def step(self, action):
 
@@ -105,8 +101,9 @@ class TorsoClimbEnv(gym.Env):
         self.torso.reset_state()
         self.steps = 0
         self.current_stance = [-1, -1]
-        self.motion_path = [[3, 3], [10, 10]]
-        self.desired_stance = self.motion_path.pop(0)
+        self.motion_path = [[3, 3]]
+        self.desired_stance_index = 0
+        self.desired_stance = self.motion_path[self.desired_stance_index]
         self.best_dist_to_stance = self.get_distance_from_desired_stance()
 
         ob = self._get_obs()
@@ -116,8 +113,9 @@ class TorsoClimbEnv(gym.Env):
             colour = [0.0, 0.7, 0.1, 0.75] if i in self.desired_stance else [1.0, 0, 0, 0.75]
             p.changeVisualShape(objectUniqueId=target.id, linkIndex=-1, rgbaColor=colour, physicsClientId=self.client)
 
-        # self.torso.force_attach(self.torso.LEFT_HAND, self.targets[11].id, force=100)
-        # self.torso.force_attach(self.torso.RIGHT_HAND, self.targets[2].id, force=-1)
+        # INFO DATA
+        self.steps_till_success = 0
+        #
 
         return np.array(ob, dtype=np.float32), info
 
@@ -164,7 +162,7 @@ class TorsoClimbEnv(gym.Env):
         terminated = False
 
         # Check if completed path
-        if len(self.motion_path) == 0:
+        if self.desired_stance_index > len(self.motion_path) - 1:
             terminated = True
 
         # Check if anything but torso is touching ground
@@ -210,7 +208,8 @@ class TorsoClimbEnv(gym.Env):
                     self.best_dist_to_stance[i] = current_dist_away[i]
 
         # positive reward if closer, otherwise small penalty based on difference away
-        reward = is_closer * np.sum(sum_values) - 0.1 * difference_closer
+        reward = is_closer * np.sum(sum_values) - 0.8 * difference_closer
+        reward += 50 if self.current_stance == self.desired_stance else 0
         self.visualise_reward(reward, -2, 2)
 
         return reward
@@ -220,8 +219,11 @@ class TorsoClimbEnv(gym.Env):
         self.get_stance_for_effector(1, self.torso.rhand_cid)
 
         # Check if stance complete
-        if self.current_stance == self.desired_stance and len(self.motion_path) != 0:
-            new_stance = self.motion_path.pop(0)
+        if self.current_stance == self.desired_stance:
+            self.desired_stance_index += 1
+            if self.desired_stance_index > len(self.motion_path)-1: return
+
+            new_stance = self.motion_path[self.desired_stance_index]
 
             for i, v in enumerate(self.desired_stance):
                 p.changeVisualShape(objectUniqueId=self.targets[v].id, linkIndex=-1, rgbaColor=[1.0, 0.0, 0.0, 0.75], physicsClientId=self.client)
@@ -236,7 +238,7 @@ class TorsoClimbEnv(gym.Env):
             torso_pos = np.array(p.getBasePositionAndOrientation(bodyUniqueId=self.torso.human, physicsClientId=self.client)[0])
             torso_pos[1] += 0.15
             torso_pos[2] += 0.35
-            p.addUserDebugText(text=f"{self.current_stance}", textPosition=torso_pos, textSize=1, lifeTime=1 / 30,
+            p.addUserDebugText(text=f"{self.current_stance}", textPosition=torso_pos, textSize=1, lifeTime=1 / 15,
                                textColorRGB=[1.0, 0.0, 1.0], physicsClientId=self.client)
 
     def get_stance_for_effector(self, eff_index, eff_cid):
@@ -275,16 +277,20 @@ class TorsoClimbEnv(gym.Env):
     def _get_info(self):
         info = dict()
 
-        # Check if it reached
-        if self.steps_till_first_grasp_left_hand == -1:
-            if self.current_stance[0] == self.desired_stance[0]:
-                self.steps_till_first_grasp_left_hand = self.steps
-        if self.steps_till_first_grasp_right_hand == -1:
-            if self.current_stance[1] == self.desired_stance[1]:
-                self.steps_till_first_grasp_right_hand = self.steps
+        if self.steps_till_success == 0 and self.desired_stance_index > 0:
+            self.steps_till_success = self.steps
 
-        info['steps_till_first_hold_reached_lh'] = self.steps_till_first_grasp_left_hand
-        info['steps_till_first_hold_reached_rh'] = self.steps_till_first_grasp_right_hand
+        best_dist_lh, best_dist_rh = self.best_dist_to_stance
+        final_dist_lh, final_dist_rh = self.get_distance_from_desired_stance()
+        success = True if self.current_stance == self.desired_stance else False
+        # Steps
+
+        info['is_success'] = success
+        info['steps_till_success'] = self.steps_till_success
+        info['best_dist_lh'] = best_dist_lh
+        info['best_dist_rh'] = best_dist_rh
+        info['final_dist_lh'] = final_dist_lh
+        info['final_dist_rh'] = final_dist_rh
         return info
 
     def seed(self, seed=None):
