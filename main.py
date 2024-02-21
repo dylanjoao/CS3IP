@@ -58,7 +58,7 @@ while True:
         action[7] = 1.0 if hold else 0.0
         print(f"Hold {hold}")
 
-    if 65305 in keys and keys[65305] & p.KEY_WAS_TRIGGERED:
+    if 114 in keys and keys[114] & p.KEY_WAS_TRIGGERED:
         print(f"Score: {score}, Steps {step}")
         done = False
         truncated = False
