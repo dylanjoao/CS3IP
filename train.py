@@ -28,47 +28,42 @@ os.makedirs(log_dir, exist_ok=True)
 class CustomCallback(BaseCallback):
     def __init__(self, verbose: int = 0):
         super().__init__(verbose)
+        self.rollout_count = 0
 
     def _on_step(self) -> bool:
         return True
 
     def _on_rollout_end(self) -> None:
-        self.model.ep_info_buffer
-        # info['steps_till_reached_stance1'] = self.steps_till_reached_stance1
-        # info['steps_till_reached_stance2'] = self.steps_till_reached_stance2
-        # info['best_dist_lh'] = best_dist_lh
-        # info['best_dist_rh'] = best_dist_rh
-        # info['final_dist_lh'] = final_dist_lh
-        # info['final_dist_rh'] = final_dist_rh
-
-        _steps_till_reached_stance1 = []
-        _steps_till_reached_stance2 = []
+        self.rollout_count += 1
+        _steps_till_success = []
+        _success = []
         _best_dist_lh = []
         _best_dist_rh = []
         _final_dist_lh = []
         _final_dist_rh = []
 
         for entry in self.model.ep_info_buffer:
-            if entry['steps_till_reached_stance1'] > 0: _steps_till_reached_stance1.append(entry['steps_till_reached_stance1'])
-            if entry['steps_till_reached_stance2'] > 0: _steps_till_reached_stance2.append(entry['steps_till_reached_stance2'])
+            if entry['steps_till_success'] > 0: _steps_till_success.append(entry['steps_till_success'])
+            _success.append(entry['is_success'])
             _best_dist_lh.append(entry['best_dist_lh'])
             _best_dist_rh.append(entry['best_dist_rh'])
             _final_dist_lh.append(entry['final_dist_lh'])
             _final_dist_rh.append(entry['final_dist_rh'])
 
-        avg_steps_till_stance1 = np.mean(_steps_till_reached_stance1) if len(_steps_till_reached_stance1) > 0 else -1
-        avg_steps_till_stance2 = np.mean(_steps_till_reached_stance2) if len(_steps_till_reached_stance2) > 0 else -1
-        best_dist_lh = np.mean(_best_dist_lh)
-        best_dist_rh = np.mean(_best_dist_rh)
-        final_dist_lh = np.mean(_final_dist_lh)
-        final_dist_rh = np.mean(_final_dist_rh)
+        mean_steps_till_success = np.mean(_steps_till_success) if len(_steps_till_success) > 0 else 0
+        mean_best_dist_lh = np.mean(_best_dist_lh)
+        mean_best_dist_rh = np.mean(_best_dist_rh)
+        mean_final_dist_lh = np.mean(_final_dist_lh)
+        mean_final_dist_rh = np.mean(_final_dist_rh)
+        success_rate = np.mean(_success)
 
-        self.logger.record("climb/mean_steps_till_stance1", avg_steps_till_stance1)
-        self.logger.record("climb/mean_steps_till_stance2", avg_steps_till_stance2)
-        self.logger.record("climb/best_dist_lh", best_dist_lh)
-        self.logger.record("climb/best_dist_rh", best_dist_rh)
-        self.logger.record("climb/final_dist_lh", final_dist_lh)
-        self.logger.record("climb/final_dist_rh", final_dist_rh)
+        self.logger.record("climb/success_rate", success_rate)
+        self.logger.record("climb/mean_steps_success", mean_steps_till_success)
+        self.logger.record("climb/mean_best_dist_lh", mean_best_dist_lh)
+        self.logger.record("climb/mean_best_dist_rh", mean_best_dist_rh)
+        self.logger.record("climb/mean_final_dist_lh", mean_final_dist_lh)
+        self.logger.record("climb/mean_final_dist_rh", mean_final_dist_rh)
+        self.logger.record("climb/rollout_count", self.rollout_count)
 
 def make_env(env_id: str, rank: int, seed: int = 0):
     """
@@ -82,7 +77,7 @@ def make_env(env_id: str, rank: int, seed: int = 0):
 
     def _init():
         env = gym.make(env_id, max_ep_steps=600)
-        m_env = Monitor(env, info_keywords=['steps_till_reached_stance1', 'steps_till_reached_stance2', 'best_dist_lh', 'best_dist_rh', 'final_dist_lh', 'final_dist_rh'])
+        m_env = Monitor(env, info_keywords=('is_success', 'steps_till_success', 'best_dist_lh', 'best_dist_rh', 'final_dist_lh', 'final_dist_rh'))
         m_env.reset(seed=seed + rank)
         return m_env
 
@@ -97,7 +92,7 @@ def train(env_name, sb3_algo, workers, path_to_model=None):
         "env_name": env_name,
     }
     run = wandb.init(
-        project="sb3",
+        project="torsoclimb_stance_1",
         config=config,
         sync_tensorboard=True,  # auto-upload sb3's tensorboard metrics
         monitor_gym=False,  # auto-upload the videos of agents playing the game

@@ -14,7 +14,7 @@ from torso_climb.assets.wall import Wall
 
 
 class TorsoClimbEnv(gym.Env):
-    metadata = {'render_modes': ['human'], 'render_fps': 60}
+    metadata = {'render_modes': ['human', 'rgb_array'], 'render_fps': 60}
 
     def __init__(self, render_mode: Optional[str] = None, max_ep_steps: Optional[int] = 600):
         self.render_mode = render_mode
@@ -45,8 +45,7 @@ class TorsoClimbEnv(gym.Env):
         self.best_dist_to_stance = []
 
         # INFO DATA
-        self.steps_till_reached_stance1 = -1
-        self.steps_till_reached_stance2 = -1
+        self.steps_till_success = 0
         #
 
         # configure pybullet GUI
@@ -102,7 +101,7 @@ class TorsoClimbEnv(gym.Env):
         self.torso.reset_state()
         self.steps = 0
         self.current_stance = [-1, -1]
-        self.motion_path = [[3, 3], [10, 10], [17, 17]]
+        self.motion_path = [[3, 3]]
         self.desired_stance_index = 0
         self.desired_stance = self.motion_path[self.desired_stance_index]
         self.best_dist_to_stance = self.get_distance_from_desired_stance()
@@ -115,12 +114,8 @@ class TorsoClimbEnv(gym.Env):
             p.changeVisualShape(objectUniqueId=target.id, linkIndex=-1, rgbaColor=colour, physicsClientId=self.client)
 
         # INFO DATA
-        self.steps_till_reached_stance1 = -1
-        self.steps_till_reached_stance2 = -1
+        self.steps_till_success = 0
         #
-
-        # self.torso.force_attach(self.torso.LEFT_HAND, self.targets[11].id, force=100)
-        # self.torso.force_attach(self.torso.RIGHT_HAND, self.targets[2].id, force=-1)
 
         return np.array(ob, dtype=np.float32), info
 
@@ -214,6 +209,7 @@ class TorsoClimbEnv(gym.Env):
 
         # positive reward if closer, otherwise small penalty based on difference away
         reward = is_closer * np.sum(sum_values) - 0.8 * difference_closer
+        reward += 50 if self.current_stance == self.desired_stance else 0
         self.visualise_reward(reward, -2, 2)
 
         return reward
@@ -281,26 +277,16 @@ class TorsoClimbEnv(gym.Env):
     def _get_info(self):
         info = dict()
 
-        # INFO DATA
-        # self.steps_till_reached_stance1
-        # self.steps_till_reached_stance2
-        # self.final_dist_to_next_hold
-        # self.best_dist_to_next_hold
-        #
-
-        if self.steps_till_reached_stance1 == -1 and self.desired_stance_index > 0:
-            self.steps_till_reached_stance1 = self.steps
-
-        if self.steps_till_reached_stance2 == -1 and self.desired_stance_index > 1:
-            self.steps_till_reached_stance2 = self.steps
+        if self.steps_till_success == 0 and self.desired_stance_index > 0:
+            self.steps_till_success = self.steps
 
         best_dist_lh, best_dist_rh = self.best_dist_to_stance
         final_dist_lh, final_dist_rh = self.get_distance_from_desired_stance()
+        success = True if self.current_stance == self.desired_stance else False
+        # Steps
 
-        # info['steps_till_first_hold_reached_lh'] = self.steps_till_first_grasp_left_hand
-        # info['steps_till_first_hold_reached_rh'] = self.steps_till_first_grasp_right_hand
-        info['steps_till_reached_stance1'] = self.steps_till_reached_stance1
-        info['steps_till_reached_stance2'] = self.steps_till_reached_stance2
+        info['is_success'] = success
+        info['steps_till_success'] = self.steps_till_success
         info['best_dist_lh'] = best_dist_lh
         info['best_dist_rh'] = best_dist_rh
         info['final_dist_lh'] = final_dist_lh
