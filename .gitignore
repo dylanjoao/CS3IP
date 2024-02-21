@@ -8,3 +8,4 @@
 models/
 logs/
 wandb/
+isaac_gym/.vscode/settings.json

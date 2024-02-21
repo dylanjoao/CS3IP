@@ -56,7 +56,7 @@ class TorsoClimbEnv(gym.Env):
         p.setPhysicsEngineParameter(fixedTimeStep=1.0 / 60., numSolverIterations=100, numSubSteps=10, physicsClientId=self.client)
 
         plane = p.loadURDF("plane.urdf", physicsClientId=self.client)
-        wall = Wall(client=self.client, pos=[0.5, 0, 2.5])
+        wall = Wall(client=self.client, pos=[0.48, 0, 2.5])
         torso = Torso(client=self.client, pos=[-0.1, 0, 0.20], ori=[0, 0, 0, 1])
 
         self.wall = wall.id
@@ -238,7 +238,7 @@ class TorsoClimbEnv(gym.Env):
             torso_pos = np.array(p.getBasePositionAndOrientation(bodyUniqueId=self.torso.human, physicsClientId=self.client)[0])
             torso_pos[1] += 0.15
             torso_pos[2] += 0.35
-            p.addUserDebugText(text=f"{self.current_stance}", textPosition=torso_pos, textSize=1, lifeTime=1 / 30,
+            p.addUserDebugText(text=f"{self.current_stance}", textPosition=torso_pos, textSize=1, lifeTime=1 / 15,
                                textColorRGB=[1.0, 0.0, 1.0], physicsClientId=self.client)
 
     def get_stance_for_effector(self, eff_index, eff_cid):
