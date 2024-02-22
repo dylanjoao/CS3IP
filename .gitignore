@@ -5,7 +5,7 @@
 .idea
 *.pyc
 
-models/
+/models
 logs/
 videos/
 wandb/
