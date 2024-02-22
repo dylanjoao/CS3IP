@@ -268,7 +268,39 @@ class TorsoClimbEnv(gym.Env):
         return len(contact_points) > 0
 
     def render(self):
-        pass
+        if self.render_mode == "human": return
+        if self.render_mode != "rgb_array": return
+
+        width = 512
+        height = 512
+        fov = 60
+        aspect = width / height
+        near = 0.02
+        far = 100
+        cameraDistance=3
+        cameraYaw=-90
+        cameraPitch=0
+        cameraTargetPosition=[0, 0, 1.5]
+        view_matrix = p.computeViewMatrixFromYawPitchRoll(
+                cameraTargetPosition=cameraTargetPosition,
+                distance=cameraDistance,
+                yaw=cameraYaw,
+                pitch=cameraPitch,
+                roll=0,
+                upAxisIndex=2)
+        projection_matrix = p.computeProjectionMatrixFOV(fov, aspect, near, far)
+
+        # Get depth values using Tiny renderer
+        image = p.getCameraImage(width,
+                                height,
+                                view_matrix,
+                                projection_matrix,
+                                shadow=False,
+                                renderer=p.ER_TINY_RENDERER)
+        rgb_tiny = np.reshape(image[2], (height, width, 4)) 
+        rgb_array = rgb_tiny[:, :, :3]
+
+        return rgb_array
 
     def close(self):
         p.disconnect(physicsClientId=self.client)

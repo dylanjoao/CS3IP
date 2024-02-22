@@ -7,5 +7,7 @@
 
 models/
 logs/
+videos/
 wandb/
-isaac_gym/.vscode/settings.json
+isaac_gym/.vscode/
+.vscode/

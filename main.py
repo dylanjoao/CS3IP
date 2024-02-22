@@ -32,11 +32,6 @@ action += [1.0, 1.0]
 # obs = vec_env.reset()
 # ====
 
-# Pause on end
-# Require backspace to restart
-# Print information on end or restart
-
-
 while True:
     # action = env.action_space.sample()
 

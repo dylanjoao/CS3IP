@@ -9,7 +9,7 @@ import argparse
 
 from stable_baselines3.common.callbacks import EvalCallback, BaseCallback
 from stable_baselines3.common.monitor import Monitor
-from stable_baselines3.common.vec_env import SubprocVecEnv
+from stable_baselines3.common.vec_env import SubprocVecEnv, VecVideoRecorder, VecFrameStack
 from stable_baselines3.common.utils import set_random_seed
 from stable_baselines3.common.callbacks import EvalCallback
 
@@ -101,6 +101,7 @@ def train(env_name, sb3_algo, workers, path_to_model=None):
 
     vec_env = SubprocVecEnv([make_env(env_name, i) for i in range(workers)], start_method="spawn")
 
+
     model = None
     save_path = f"{model_dir}/{run.id}"
 
@@ -115,12 +116,6 @@ def train(env_name, sb3_algo, workers, path_to_model=None):
     elif sb3_algo == 'SAC':
         if path_to_model is None: model = sb.SAC('MlpPolicy', vec_env, verbose=1, device='cuda', tensorboard_log=log_dir)
         else: model = sb.SAC.load(path_to_model, env=vec_env)
-    elif sb3_algo == 'TD3':
-        if path_to_model is None: model = sb.TD3('MlpPolicy', vec_env, verbose=1, device='cuda', tensorboard_log=log_dir)
-    elif sb3_algo == 'A2C':
-        model = sb.A2C('MlpPolicy', vec_env, verbose=1, device='cuda', tensorboard_log=log_dir)
-    elif sb3_algo == 'DQN':
-        model = sb.DQN('MlpPolicy', vec_env, verbose=1, device='cuda', tensorboard_log=log_dir)
     else:
         print('Algorithm not found')
         return

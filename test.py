@@ -43,6 +43,35 @@ humanoid = p.loadURDF(current_directory + "/torso_climb/assets/pyb_torso.xml", b
 while True:
     p.stepSimulation()
     events = p.getKeyboardEvents()
+
+    width = 512
+    height = 512
+    fov = 60
+    aspect = width / height
+    near = 0.02
+    far = 100
+    cameraDistance=4
+    cameraYaw=-90
+    cameraPitch=0
+    cameraTargetPosition=[0, 0, 3]
+    view_matrix = p.computeViewMatrixFromYawPitchRoll(
+			cameraTargetPosition=cameraTargetPosition,
+			distance=cameraDistance,
+			yaw=cameraYaw,
+			pitch=cameraPitch,
+			roll=0,
+			upAxisIndex=2)
+    projection_matrix = p.computeProjectionMatrixFOV(fov, aspect, near, far)
+
+    # Get depth values using Tiny renderer
+    images = p.getCameraImage(width,
+                            height,
+                            view_matrix,
+                            projection_matrix,
+                            shadow=True,
+                            renderer=p.ER_TINY_RENDERER)
+    rgb_tiny = np.reshape(images[2], (height, width, 4)) * 1. / 255.
+
     # time.sleep(1/144)
 
 p.disconnect()
