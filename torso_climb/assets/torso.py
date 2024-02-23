@@ -130,3 +130,4 @@ class Torso:
         p.resetBasePositionAndOrientation(bodyUniqueId=self.human, posObj=self.base_pos, ornObj=self.base_ori, physicsClientId=self.client)
         for i, v in enumerate(self.ordered_joint_indices):
             p.resetJointState(self.human, v, targetValue=0.0, targetVelocity=0.0, physicsClientId=self.client)
+
