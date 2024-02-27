@@ -16,7 +16,7 @@ from torso_climb.assets.wall import Wall
 class TorsoClimbEnv(gym.Env):
     metadata = {'render_modes': ['human', 'rgb_array'], 'render_fps': 60}
 
-    def __init__(self, render_mode: Optional[str] = None, max_ep_steps: Optional[int] = 250):
+    def __init__(self, render_mode: Optional[str] = None, max_ep_steps: Optional[int] = 600):
         self.render_mode = render_mode
         self.max_ep_steps = max_ep_steps
         self.steps = 0
@@ -53,7 +53,7 @@ class TorsoClimbEnv(gym.Env):
         p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0, physicsClientId=self.client)
         p.resetDebugVisualizerCamera(cameraDistance=4, cameraYaw=-90, cameraPitch=0, cameraTargetPosition=[0, 0, 3], physicsClientId=self.client)
         p.setGravity(0, 0, -9.8, physicsClientId=self.client)
-        p.setPhysicsEngineParameter(fixedTimeStep=1.0 / 60., numSolverIterations=100, numSubSteps=10, physicsClientId=self.client)
+        # p.setPhysicsEngineParameter(fixedTimeStep=1.0 / 60., numSolverIterations=100, numSubSteps=10, physicsClientId=self.client)
 
         plane = p.loadURDF("plane.urdf", physicsClientId=self.client)
         wall = Wall(client=self.client, pos=[0.48, 0, 2.5])
@@ -91,7 +91,7 @@ class TorsoClimbEnv(gym.Env):
         terminated = self.terminate_check()
         truncated = self.truncate_check()
 
-        if self.render_mode == 'human': sleep(1 / 60)
+        # if self.render_mode == 'human': sleep(1 / 60)
 
         return ob, reward, terminated, truncated, info
 
@@ -102,7 +102,7 @@ class TorsoClimbEnv(gym.Env):
         self.torso.initialise_random_state()
         self.steps = 0
         self.current_stance = [-1, -1]
-        self.motion_path = [[11, 3]]
+        self.motion_path = [[10, 10]]
         self.desired_stance_index = 0
         self.desired_stance = self.motion_path[self.desired_stance_index]
         self.best_dist_to_stance = self.get_distance_from_desired_stance()

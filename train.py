@@ -76,7 +76,7 @@ def make_env(env_id: str, rank: int, seed: int = 0):
     """
 
     def _init():
-        env = gym.make(env_id, max_ep_steps=250)
+        env = gym.make(env_id, max_ep_steps=600)
         m_env = Monitor(env, info_keywords=('is_success', 'steps_till_success', 'best_dist_lh', 'best_dist_rh', 'final_dist_lh', 'final_dist_rh'))
         m_env.reset(seed=seed + rank)
         return m_env
