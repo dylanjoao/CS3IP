@@ -16,7 +16,7 @@ from torso_climb.assets.wall import Wall
 class TorsoClimbEnv(gym.Env):
     metadata = {'render_modes': ['human', 'rgb_array'], 'render_fps': 60}
 
-    def __init__(self, render_mode: Optional[str] = None, max_ep_steps: Optional[int] = 600):
+    def __init__(self, render_mode: Optional[str] = None, max_ep_steps: Optional[int] = 250):
         self.render_mode = render_mode
         self.max_ep_steps = max_ep_steps
         self.steps = 0
@@ -57,7 +57,7 @@ class TorsoClimbEnv(gym.Env):
 
         plane = p.loadURDF("plane.urdf", physicsClientId=self.client)
         wall = Wall(client=self.client, pos=[0.48, 0, 2.5])
-        torso = Torso(client=self.client, pos=[-0.1, 0, 0.20], ori=[0, 0, 0, 1])
+        torso = Torso(client=self.client, pos=[-0.1, 0, 0.20], ori=[0, 0, 0, 1], statefile="./torso_climb/states/final_states_1.npz")
 
         self.wall = wall.id
         self.floor = plane
@@ -99,9 +99,10 @@ class TorsoClimbEnv(gym.Env):
         super().reset(seed=seed)
 
         self.torso.reset_state()
+        self.torso.initialise_random_state()
         self.steps = 0
         self.current_stance = [-1, -1]
-        self.motion_path = [[3, 3]]
+        self.motion_path = [[11, 3]]
         self.desired_stance_index = 0
         self.desired_stance = self.motion_path[self.desired_stance_index]
         self.best_dist_to_stance = self.get_distance_from_desired_stance()
@@ -193,23 +194,30 @@ class TorsoClimbEnv(gym.Env):
             sum_values[i] = kappa * np.exp(-1 * sigma * distance) + reached
 
         # I(d_t), is the stance closer than ever
-        # individually check if the distance on both hand is closer than before
         is_closer = True
         difference_closer = 0
-        for i, best_dist_away in enumerate(self.best_dist_to_stance):
-            difference = best_dist_away - current_dist_away[i]
-            if difference <= 0:  # not closer
-                is_closer = False
-                difference_closer -= difference
+
+        # individually check if the distance on both hand is closer than before
+        # for i, best_dist_away in enumerate(self.best_dist_to_stance):
+        #     difference = best_dist_away - current_dist_away[i]
+        #     if difference <= 0:  # not closer
+        #         is_closer = False
+        #         difference_closer -= difference
+
+        # compare sum of values instead of individual values
+        if np.sum(current_dist_away) > np.sum(self.best_dist_to_stance):
+            is_closer = False
+            difference_closer = np.sum(self.best_dist_to_stance) - np.sum(current_dist_away)
 
         if is_closer:
+            # self.best_dist_to_stance = current_dist_away.copy()
             for i, best_dist_away in enumerate(self.best_dist_to_stance):
                 if current_dist_away[i] < best_dist_away:
                     self.best_dist_to_stance[i] = current_dist_away[i]
 
         # positive reward if closer, otherwise small penalty based on difference away
-        reward = is_closer * np.sum(sum_values) - 0.8 * difference_closer
-        reward += 50 if self.current_stance == self.desired_stance else 0
+        reward = is_closer * np.sum(sum_values) + 0.8 * difference_closer
+        reward += 500 if self.current_stance == self.desired_stance else 0
         self.visualise_reward(reward, -2, 2)
 
         return reward

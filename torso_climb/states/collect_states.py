@@ -1,3 +1,5 @@
+import random
+
 import pybullet as p
 import torso_climb
 import stable_baselines3 as sb
@@ -26,15 +28,35 @@ def get_state(bodyIndex, pid):
 
 
 def set_state(bodyIndex, pid, state):
+	pos = state[0:3]
+	ori = state[3:7]
 	numJoints = p.getNumJoints(bodyIndex, physicsClientId=pid)
-	p.resetBasePositionAndOrientation(bodyIndex, state[0], state[1], physicsClientId=pid)
+	joints = [state[(i * 2) + 7:(i * 2) + 9] for i in range(numJoints)]
+
+	p.resetBasePositionAndOrientation(bodyIndex, pos, ori, physicsClientId=pid)
 	for joint in range(numJoints):
-		p.resetJointState(bodyIndex, joint, state[2][joint][0], state[2][joint][1], physicsClientId=pid)
+		p.resetJointState(bodyIndex, joint, joints[joint][0], joints[joint][1], physicsClientId=pid)
 
 
-env = gym.make("TorsoClimb-v0", render_mode=None)
+env = gym.make("TorsoClimb-v0", render_mode="human")
 model = sb.PPO.load("../models/stance1_best_model.zip", env=env)
 obs = env.reset()[0]
+
+# file = np.load(r"./final_states_1.npz")
+# done = False
+# info = None
+# while True:
+# 	action, _state = model.predict(np.array(obs), deterministic=True)
+# 	obs, reward, done, truncated, info = env.step(action)
+#
+# 	keys = p.getKeyboardEvents()
+# 	if 114 in keys and keys[114] & p.KEY_WAS_TRIGGERED:
+# 		env.reset()
+#
+# 	if 104 in keys and keys[104] & p.KEY_WAS_TRIGGERED:
+# 		rand = random.randint(0, 999)
+# 		state = file['arr_0'][rand]
+# 		set_state(2, 0, state)
 
 start = time.perf_counter()
 saved = 0

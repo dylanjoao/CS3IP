@@ -76,7 +76,7 @@ def make_env(env_id: str, rank: int, seed: int = 0):
     """
 
     def _init():
-        env = gym.make(env_id, max_ep_steps=600)
+        env = gym.make(env_id, max_ep_steps=250)
         m_env = Monitor(env, info_keywords=('is_success', 'steps_till_success', 'best_dist_lh', 'best_dist_rh', 'final_dist_lh', 'final_dist_rh'))
         m_env.reset(seed=seed + rank)
         return m_env
@@ -92,7 +92,7 @@ def train(env_name, sb3_algo, workers, path_to_model=None):
         "env_name": env_name,
     }
     run = wandb.init(
-        project="torsoclimb_stance_1",
+        project="torsoclimb_stance_2",
         config=config,
         sync_tensorboard=True,  # auto-upload sb3's tensorboard metrics
         monitor_gym=False,  # auto-upload the videos of agents playing the game
