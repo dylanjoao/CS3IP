@@ -39,7 +39,7 @@ def set_state(bodyIndex, pid, state):
 
 
 env = gym.make("TorsoClimb-v0")
-model = sb.PPO.load("../models/stance1_best_model.zip", env=env)
+model = sb.PPO.load("../models/stance2_best_model.zip", env=env)
 obs = env.reset()[0]
 
 # file = np.load(r"./final_states_1.npz")

@@ -14,64 +14,42 @@ current_directory = os.getcwd()
 client = p.connect(p.GUI)
 p.setGravity(0, 0, -9.8, physicsClientId=client)
 p.setAdditionalSearchPath(pybullet_data.getDataPath())
+p.setRealTimeSimulation(1)
+
+
+def apply_action(body, actions, motors, power):
+	forces = [0. for i in range(len(motors))]
+	for m in range(len(motors)):
+		limit = 15
+		ac = np.clip(actions[m], -limit, limit)
+		forces[m] = power[m] * ac
+	p.setJointMotorControlArray(body, motors, controlMode=p.TORQUE_CONTROL, forces=forces)
+
 
 # flags = p.URDF_MAINTAIN_LINK_ORDER + p.URDF_USE_SELF_COLLISION
 flags = p.URDF_USE_SELF_COLLISION_EXCLUDE_ALL_PARENTS
 plane = p.loadURDF("plane.urdf")
 # humanoid = p.loadURDF(current_directory + "/torso_climb/assets/pyb_torso_2.xml", basePosition=[0, 0, 2], baseOrientation=[0.707, 0, 0, 0.707], flags=flags, globalScaling=0.25, useFixedBase=True)
-humanoid = p.loadURDF(current_directory + "/torso_climb/assets/pyb_torso.xml", basePosition=[0, 0, 2], flags=flags, useFixedBase=True)
-# humanoid = p.loadMJCF(current_directory + "/torso_climb/assets/mjcf_torso_2.xml")
+# humanoid = p.loadURDF(current_directory + "/torso_climb/assets/pyb_torso.xml", basePosition=[0, 0, 2], flags=flags, useFixedBase=True)
+humanoid = p.loadMJCF(current_directory + "/torso_climb/assets/mjcf_torso.xml")
+p.createConstraint(humanoid[0], -1, -1, -1, p.JOINT_FIXED, [0, 0, 0], [0, 0, 0, ], [0, 0, 1])
 
-# for j in range(p.getNumJoints(humanoid)):
-#     ji = p.getJointInfo(humanoid, j)
-#     targetPosition = [0]
-#     jointType = ji[2]
-#     if jointType == p.JOINT_SPHERICAL:
-#         targetPosition = [0, 0, 0, 0]
-#         p.setJointMotorControlMultiDof(humanoid,
-#                                        j,
-#                                        p.POSITION_CONTROL,
-#                                        targetPosition,
-#                                        targetVelocity=[0, 0, 0],
-#                                        positionGain=0,
-#                                        velocityGain=1,
-#                                        force=[0, 0, 0])
-#     if jointType == p.JOINT_PRISMATIC or jointType == p.JOINT_REVOLUTE:
-#         p.setJointMotorControl2(humanoid, j, p.VELOCITY_CONTROL, targetVelocity=0, force=0)
+debug_params = []
+motors = []
 
+body = humanoid[0]
+for i in range(p.getNumJoints(body)):
+	ji = p.getJointInfo(body, i)
+	if ji[2] == p.JOINT_REVOLUTE:
+		motors.append(i)
+		debug_params.append(p.addUserDebugParameter(ji[1].decode("utf-8"), -1, 1, 0.0))
+
+power = [75 for i in range(len(debug_params))]
 
 while True:
-    p.stepSimulation()
-    events = p.getKeyboardEvents()
-
-    width = 512
-    height = 512
-    fov = 60
-    aspect = width / height
-    near = 0.02
-    far = 100
-    cameraDistance=4
-    cameraYaw=-90
-    cameraPitch=0
-    cameraTargetPosition=[0, 0, 3]
-    view_matrix = p.computeViewMatrixFromYawPitchRoll(
-			cameraTargetPosition=cameraTargetPosition,
-			distance=cameraDistance,
-			yaw=cameraYaw,
-			pitch=cameraPitch,
-			roll=0,
-			upAxisIndex=2)
-    projection_matrix = p.computeProjectionMatrixFOV(fov, aspect, near, far)
-
-    # Get depth values using Tiny renderer
-    images = p.getCameraImage(width,
-                            height,
-                            view_matrix,
-                            projection_matrix,
-                            shadow=True,
-                            renderer=p.ER_TINY_RENDERER)
-    rgb_tiny = np.reshape(images[2], (height, width, 4)) * 1. / 255.
-
-    # time.sleep(1/144)
+	# p.stepSimulation()
+	events = p.getKeyboardEvents()
+	actions = [p.readUserDebugParameter(i) for i in debug_params]
+	apply_action(body, actions, motors, power)
 
 p.disconnect()
