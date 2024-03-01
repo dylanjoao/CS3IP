@@ -13,9 +13,10 @@
 		</collision>
 	</link>
 
-	<joint name="right_shoulder1" type="continuous">
+	<joint name="right_shoulder1" type="revolute">
 		<parent link="torso"/>
 		<child link="link1_25"/>
+		<limit effort="1000.0" lower="-2.18" upper="1" velocity="1000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
 		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 -0.17000 0.06000"/>
 		<axis xyz="2.00000 1.00000 1.00000"/>
@@ -28,9 +29,10 @@
 		</inertial>
 	</link>
 
-	<joint name="right_shoulder2" type="continuous">
+	<joint name="right_shoulder2" type="revolute">
 		<parent link="link1_25"/>
 		<child link="link1_26"/>
+		<limit effort="1000.0" lower="-1.5708" upper="2.61799" velocity="1000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
 		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="0.00000 -1.00000 1.00000"/>
@@ -64,9 +66,10 @@
 		</collision>
 	</link>
 
-	<joint name="right_elbow" type="continuous">
+	<joint name="right_elbow" type="revolute">
 		<parent link="right_upper_arm"/>
 		<child link="link1_28"/>
+		<limit effort="1000.0" lower="-1.74533" upper="1.13446" velocity="1000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
 		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.18000 -0.18000 -0.18000"/>
 		<axis xyz="0.00000 -1.00000 1.00000"/>
@@ -106,9 +109,10 @@
 		</collision>
 	</link>
 
-	<joint name="left_shoulder1" type="continuous">
+	<joint name="left_shoulder1" type="revolute">
 		<parent link="torso"/>
 		<child link="link1_30"/>
+		<limit effort="1000.0" lower="-1" upper="2.18" velocity="1000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
 		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.17000 0.06000"/>
 		<axis xyz="2.00000 -1.00000 1.00000"/>
@@ -121,9 +125,10 @@
 		</inertial>
 	</link>
 
-	<joint name="left_shoulder2" type="continuous">
+	<joint name="left_shoulder2" type="revolute">
 		<parent link="link1_30"/>
 		<child link="link1_31"/>
+		<limit effort="1000.0" lower="-1.5708" upper="2.61799" velocity="1000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
 		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
 		<axis xyz="0.00000 1.00000 1.00000"/>
@@ -157,9 +162,10 @@
 		</collision>
 	</link>
 
-	<joint name="left_elbow" type="continuous">
+	<joint name="left_elbow" type="revolute">
 		<parent link="left_upper_arm"/>
 		<child link="link1_33"/>
+		<limit effort="1000.0" lower="-1.74533" upper="1.13446" velocity="1000"/>
 		<dynamics damping="1.0" friction="0.0001"/>
 		<origin rpy="0.00000 -0.00000 0.00000" xyz="0.18000 0.18000 -0.18000"/>
 		<axis xyz="0.00000 -1.00000 -1.00000"/>
