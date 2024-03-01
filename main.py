@@ -3,11 +3,12 @@ import random
 import gymnasium as gym
 import pendulum_climb
 import torso_climb
+from torso_climb.env.torso_climb_env import Reward
 import pybullet as p
 import time
 from stable_baselines3 import PPO, SAC
 
-env = gym.make('TorsoClimb-v0', render_mode='human', max_ep_steps=250)
+env = gym.make('TorsoClimb-v0', render_mode='human', max_ep_steps=600, reward=Reward.NEGATIVE_DIST, motion_path=[[6, 5]], state_file="./torso_climb/states/stance2_states.npz")
 ob, info = env.reset(seed=42)
 
 state = env.reset()

@@ -1,5 +1,6 @@
+from enum import Enum
 from time import sleep
-from typing import Optional
+from typing import Optional, List
 
 import os
 import gymnasium as gym
@@ -13,13 +14,28 @@ from torso_climb.assets.torso import *
 from torso_climb.assets.wall import Wall
 
 
+class Reward(Enum):
+	EQ1 = 1
+	NEGATIVE_DIST = 2
+
+
 class TorsoClimbEnv(gym.Env):
 	metadata = {'render_modes': ['human', 'rgb_array'], 'render_fps': 60}
 
-	def __init__(self, render_mode: Optional[str] = None, max_ep_steps: Optional[int] = 602):
+	def __init__(self, reward: Reward, motion_path: List[int], render_mode: Optional[str] = None, max_ep_steps: Optional[int] = 602, state_file: Optional[str] = None):
 		self.render_mode = render_mode
 		self.max_ep_steps = max_ep_steps
 		self.steps = 0
+
+		self.init_from_state = False if state_file is None else True
+		self.state_file = state_file
+		self.motion_path = motion_path
+		self.reward_func = None
+
+		if reward == Reward.EQ1:
+			self.reward_func = self.calculate_reward_eq1
+		elif reward == Reward.NEGATIVE_DIST:
+			self.reward_func = self.calculate_reward_negative_distance
 
 		if self.render_mode == 'human':
 			self.client = p.connect(p.GUI)
@@ -41,7 +57,6 @@ class TorsoClimbEnv(gym.Env):
 		self.current_stance = []
 		self.desired_stance = []
 		self.desired_stance_index = 0
-		self.motion_path = []
 		self.best_dist_to_stance = []
 
 		# INFO DATA
@@ -57,7 +72,7 @@ class TorsoClimbEnv(gym.Env):
 
 		plane = p.loadURDF("plane.urdf", physicsClientId=self.client)
 		wall = Wall(client=self.client, pos=[0.48, 0, 2.5])
-		torso = Torso(client=self.client, pos=[-0.1, 0, 0.20], ori=[0, 0, 0, 1], statefile="./torso_climb/states/final_states_1.npz")
+		torso = Torso(client=self.client, pos=[-0.1, 0, 0.20], ori=[0, 0, 0, 1], statefile=self.state_file)
 
 		self.wall = wall.id
 		self.floor = plane
@@ -85,7 +100,7 @@ class TorsoClimbEnv(gym.Env):
 		ob = self._get_obs()
 		info = self._get_info()
 
-		reward = self.calculate_reward_negative_distance()
+		reward = self.reward_func()
 
 		# Check termination conditions
 		terminated = self.terminate_check()
@@ -99,10 +114,10 @@ class TorsoClimbEnv(gym.Env):
 		super().reset(seed=seed)
 
 		self.torso.reset_state()
-		self.torso.initialise_random_state()
+		if self.init_from_state: self.torso.initialise_random_state()
 		self.steps = 0
 		self.current_stance = [-1, -1]
-		self.motion_path = [[2, 5]]
+		# self.motion_path = [[2, 5]]
 		self.desired_stance_index = 0
 		self.desired_stance = self.motion_path[self.desired_stance_index]
 		self.best_dist_to_stance = self.get_distance_from_desired_stance()

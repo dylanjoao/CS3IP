@@ -1,11 +1,13 @@
 import random
 
 import pybullet as p
-import torso_climb
 import stable_baselines3 as sb
 import gymnasium as gym
 import numpy as np
 import time
+import torso_climb
+
+from torso_climb.env.torso_climb_env import Reward
 
 NUM_SAMPLES = 1000
 
@@ -38,8 +40,8 @@ def set_state(bodyIndex, pid, state):
 		p.resetJointState(bodyIndex, joint, joints[joint][0], joints[joint][1], physicsClientId=pid)
 
 
-env = gym.make("TorsoClimb-v0")
-model = sb.PPO.load("../models/stance2_best_model.zip", env=env)
+env = gym.make("TorsoClimb-v0", max_ep_steps=600, reward=Reward.NEGATIVE_DIST, motion_path=[[2, 5]], state_file="./torso_climb/states/stance1_states.npz")
+model = sb.PPO.load("./torso_climb/models/stance2_best_model.zip", env=env)
 obs = env.reset()[0]
 
 # file = np.load(r"./final_states_1.npz")
@@ -73,9 +75,9 @@ for i in range(NUM_SAMPLES):
 		states.append(get_state(2, 0))
 		saved += 1
 
-	print(f"reset {saved}")
+	print(f"Collected {saved} states")
 	env.reset()
 
 env.close()
-np.savez(r'./out.npz', states)
-print(f"Saved {NUM_SAMPLES} samples in {time.perf_counter() - start} seconds")
+np.savez(r'./torso_climb/states/out2.npz', states)
+print(f"Saved {saved} samples in {time.perf_counter() - start} seconds")
