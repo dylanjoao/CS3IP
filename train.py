@@ -50,12 +50,12 @@ class CustomCallback(BaseCallback):
             _final_dist_lh.append(entry['final_dist_lh'])
             _final_dist_rh.append(entry['final_dist_rh'])
 
-        mean_steps_till_success = np.mean(_steps_till_success) if len(_steps_till_success) > 0 else 0
-        mean_best_dist_lh = np.mean(_best_dist_lh)
-        mean_best_dist_rh = np.mean(_best_dist_rh)
-        mean_final_dist_lh = np.mean(_final_dist_lh)
-        mean_final_dist_rh = np.mean(_final_dist_rh)
-        success_rate = np.mean(_success)
+        mean_steps_till_success = np.mean(_steps_till_success) if len(_steps_till_success) > 0 else None
+        mean_best_dist_lh = np.mean(_best_dist_lh) if len(_best_dist_lh) > 0 else None
+        mean_best_dist_rh = np.mean(_best_dist_rh) if len(_best_dist_rh) > 0 else None
+        mean_final_dist_lh = np.mean(_final_dist_lh) if len(_final_dist_lh) > 0 else None
+        mean_final_dist_rh = np.mean(_final_dist_rh) if len(_final_dist_rh) > 0 else None
+        success_rate = np.mean(_success) if len(_final_dist_rh) > 0 else None
 
         self.logger.record("climb/success_rate", success_rate)
         self.logger.record("climb/mean_steps_success", mean_steps_till_success)
@@ -92,7 +92,7 @@ def train(env_name, sb3_algo, workers, path_to_model=None):
         "env_name": env_name,
     }
     run = wandb.init(
-        project="torsoclimb_stance_2",
+        project="torsoclimb_stance_1_take2",
         config=config,
         sync_tensorboard=True,  # auto-upload sb3's tensorboard metrics
         monitor_gym=False,  # auto-upload the videos of agents playing the game

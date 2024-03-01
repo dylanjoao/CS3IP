@@ -38,7 +38,7 @@ def set_state(bodyIndex, pid, state):
 		p.resetJointState(bodyIndex, joint, joints[joint][0], joints[joint][1], physicsClientId=pid)
 
 
-env = gym.make("TorsoClimb-v0", render_mode="human")
+env = gym.make("TorsoClimb-v0")
 model = sb.PPO.load("../models/stance1_best_model.zip", env=env)
 obs = env.reset()[0]
 
@@ -63,8 +63,9 @@ saved = 0
 states = []
 for i in range(NUM_SAMPLES):
 	done = False
+	truncated = False
 	info = None
-	while not done:
+	while not done and not truncated:
 		action, _state = model.predict(np.array(obs), deterministic=True)
 		obs, reward, done, truncated, info = env.step(action)
 
@@ -72,6 +73,7 @@ for i in range(NUM_SAMPLES):
 		states.append(get_state(2, 0))
 		saved += 1
 
+	print(f"reset {saved}")
 	env.reset()
 
 env.close()

@@ -8,12 +8,12 @@ import math
 
 # Reference https://www.gymlibrary.dev/environments/mujoco/humanoid/
 class Torso:
-	def __init__(self, client, pos, ori, statefile=None):
+	def __init__(self, client, pos, ori, statefile=None, fixedBase=False):
 		f_name = os.path.join(os.path.dirname(__file__), 'pyb_torso.xml')
 
 		self.client = client
 		self.id = p.loadURDF(fileName=f_name, flags=p.URDF_MAINTAIN_LINK_ORDER + p.URDF_USE_SELF_COLLISION_EXCLUDE_ALL_PARENTS, basePosition=pos, baseOrientation=ori,
-							 globalScaling=1.0, physicsClientId=self.client)
+							 globalScaling=1.0, useFixedBase=fixedBase, physicsClientId=self.client)
 
 		# https://github.com/bulletphysics/bullet3/blob/master/examples/pybullet/tensorflow/humanoid_running.py#L35
 		self.human = self.id
@@ -66,7 +66,7 @@ class Torso:
 		for m in range(len(self.motors)):
 			limit = 15
 			ac = np.clip(body_actions[m], -limit, limit)
-			forces[m] = self.motor_power[m] * ac * 0.082
+			forces[m] = self.motor_power[m] * ac
 		p.setJointMotorControlArray(self.human, self.motors, controlMode=p.TORQUE_CONTROL, forces=forces)
 
 		# Left hand value
@@ -147,6 +147,6 @@ class Torso:
 			p.resetJointState(self.human, joint, joints[joint][0], joints[joint][1], physicsClientId=self.client)
 
 	def initialise_random_state(self):
-		rand = random.randint(0, 999)
+		rand = random.randint(0, 900)
 		state = self.state_file['arr_0'][rand]
 		self.set_state(state)

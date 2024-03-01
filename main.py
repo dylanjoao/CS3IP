@@ -22,7 +22,7 @@ action = [0.0 for i in range(6)]
 action += [1.0, 1.0]
 
 # Test each joint
-# action = [0.0, 0.0, 0.0, 0.0]
+# action = [1.0, 1.0, 0.0, 0.0, 0.0, 0.0]
 # action += [0.0, 0.0]
 
 
