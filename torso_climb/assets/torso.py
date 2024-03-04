@@ -118,7 +118,7 @@ class Torso:
 				target_pos, _ = p.getBasePositionAndOrientation(bodyUniqueId=body_id, physicsClientId=self.client)
 				dist = np.linalg.norm(np.array(limb_pos) - np.array(target_pos))
 				if dist < 0.06:
-					self.force_attach(limb_link=limb_link, target_id=body_id, force=-1)
+					self.force_attach(limb_link=limb_link, target_id=body_id, force=600)
 					break
 
 	def detach(self, limb_link):
@@ -147,6 +147,7 @@ class Torso:
 			p.resetJointState(self.human, joint, joints[joint][0], joints[joint][1], physicsClientId=self.client)
 
 	def initialise_random_state(self):
-		rand = random.randint(0, 900)
+		upper = len(self.state_file['arr_0'])
+		rand = random.randint(0, upper-1)
 		state = self.state_file['arr_0'][rand]
 		self.set_state(state)

@@ -10,6 +10,9 @@ import torso_climb
 from torso_climb.env.torso_climb_env import Reward
 
 NUM_SAMPLES = 1000
+INIT_STATE_FILE = "./torso_climb/states/stance1_21.npz"
+MODEL_FILE = "./torso_climb/models/stance2_25.zip"
+STANCE = [[2, 5]]
 
 
 def get_state(bodyIndex, pid):
@@ -40,8 +43,8 @@ def set_state(bodyIndex, pid, state):
 		p.resetJointState(bodyIndex, joint, joints[joint][0], joints[joint][1], physicsClientId=pid)
 
 
-env = gym.make("TorsoClimb-v0", max_ep_steps=600, reward=Reward.NEGATIVE_DIST, motion_path=[[2, 5]], state_file="./torso_climb/states/stance1_states.npz")
-model = sb.PPO.load("./torso_climb/models/stance2_best_model.zip", env=env)
+env = gym.make("TorsoClimb-v0", max_ep_steps=600, reward=Reward.NEGATIVE_DIST, motion_path=STANCE, state_file=INIT_STATE_FILE)
+model = sb.PPO.load(MODEL_FILE, env=env)
 obs = env.reset()[0]
 
 # file = np.load(r"./final_states_1.npz")

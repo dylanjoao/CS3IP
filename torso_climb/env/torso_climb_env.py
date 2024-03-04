@@ -68,7 +68,7 @@ class TorsoClimbEnv(gym.Env):
 		p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0, physicsClientId=self.client)
 		p.resetDebugVisualizerCamera(cameraDistance=4, cameraYaw=-90, cameraPitch=0, cameraTargetPosition=[0, 0, 3], physicsClientId=self.client)
 		p.setGravity(0, 0, -9.8, physicsClientId=self.client)
-		# p.setPhysicsEngineParameter(fixedTimeStep=1.0 / 60., numSolverIterations=100, numSubSteps=10, physicsClientId=self.client)
+		p.setPhysicsEngineParameter(fixedTimeStep=1.0 / 240., numSolverIterations=100, numSubSteps=10, physicsClientId=self.client)
 
 		plane = p.loadURDF("plane.urdf", physicsClientId=self.client)
 		wall = Wall(client=self.client, pos=[0.48, 0, 2.5])
@@ -91,6 +91,8 @@ class TorsoClimbEnv(gym.Env):
 	def step(self, action):
 
 		p.stepSimulation(physicsClientId=self.client)
+		p.stepSimulation(physicsClientId=self.client)
+
 		self.steps += 1
 
 		self.torso.apply_action(action)
