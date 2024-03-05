@@ -3,11 +3,15 @@ import random
 import gymnasium as gym
 import pendulum_climb
 import torso_climb
+from torso_climb.env.torso_climb_env import Reward
 import pybullet as p
 import time
 from stable_baselines3 import PPO, SAC
 
-env = gym.make('TorsoClimb-v0', render_mode='human', max_ep_steps=250)
+MOTION = [[6, 5]]
+STATEFILE = "./torso_climb/states/stance2_25.npz"
+
+env = gym.make('TorsoClimb-v0', render_mode='human', max_ep_steps=600, reward=Reward.NEGATIVE_DIST, motion_path=MOTION, state_file=STATEFILE)
 ob, info = env.reset(seed=42)
 
 state = env.reset()
@@ -22,7 +26,7 @@ action = [0.0 for i in range(6)]
 action += [1.0, 1.0]
 
 # Test each joint
-# action = [0.0, 0.0, 0.0, 0.0]
+# action = [1.0, 1.0, 0.0, 0.0, 0.0, 0.0]
 # action += [0.0, 0.0]
 
 
