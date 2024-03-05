@@ -91,7 +91,6 @@ class TorsoClimbEnv(gym.Env):
 	def step(self, action):
 
 		p.stepSimulation(physicsClientId=self.client)
-		p.stepSimulation(physicsClientId=self.client)
 
 		self.steps += 1
 
@@ -103,6 +102,7 @@ class TorsoClimbEnv(gym.Env):
 		info = self._get_info()
 
 		reward = self.reward_func()
+		reached = self.check_reached_stance()
 
 		# Check termination conditions
 		terminated = self.terminate_check()
@@ -254,8 +254,19 @@ class TorsoClimbEnv(gym.Env):
 		self.get_stance_for_effector(0, self.torso.lhand_cid)
 		self.get_stance_for_effector(1, self.torso.rhand_cid)
 
+		if self.render_mode == 'human':
+			torso_pos = np.array(p.getBasePositionAndOrientation(bodyUniqueId=self.torso.human, physicsClientId=self.client)[0])
+			torso_pos[1] += 0.15
+			torso_pos[2] += 0.35
+			p.addUserDebugText(text=f"{self.current_stance}", textPosition=torso_pos, textSize=1, lifeTime=1 / 15, textColorRGB=[1.0, 0.0, 1.0], physicsClientId=self.client)
+
+	def check_reached_stance(self):
+		reached = False
+
 		# Check if stance complete
 		if self.current_stance == self.desired_stance:
+			reached = True
+
 			self.desired_stance_index += 1
 			if self.desired_stance_index > len(self.motion_path) - 1: return
 
@@ -270,12 +281,7 @@ class TorsoClimbEnv(gym.Env):
 			# Reset best_dist
 			self.best_dist_to_stance = self.get_distance_from_desired_stance()
 
-		if self.render_mode == 'human':
-			torso_pos = np.array(p.getBasePositionAndOrientation(bodyUniqueId=self.torso.human, physicsClientId=self.client)[0])
-			torso_pos[1] += 0.15
-			torso_pos[2] += 0.35
-			p.addUserDebugText(text=f"{self.current_stance}", textPosition=torso_pos, textSize=1, lifeTime=1 / 15,
-							   textColorRGB=[1.0, 0.0, 1.0], physicsClientId=self.client)
+		return reached
 
 	def get_stance_for_effector(self, eff_index, eff_cid):
 		if eff_cid != -1:
