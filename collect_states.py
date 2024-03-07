@@ -10,9 +10,9 @@ import torso_climb
 from torso_climb.env.torso_climb_env import Reward
 
 NUM_SAMPLES = 1000
-INIT_STATE_FILE = "./torso_climb/states/stance1_21.npz"
-MODEL_FILE = "./torso_climb/models/stance2_25.zip"
-STANCE = [[2, 5]]
+INIT_STATE_FILE = "./torso_climb/states/state2_25.npz"
+MODEL_FILE = "./torso_climb/models/stance3_55.zip"
+STANCE = [[5, 5]]
 
 
 def get_state(bodyIndex, pid):

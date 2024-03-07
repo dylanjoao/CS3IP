@@ -97,8 +97,8 @@ def train(env_name, sb3_algo, workers, path_to_model=None):
 
 	max_ep_steps = 600
 	reward_type = Reward.NEGATIVE_DIST
-	motion_path = [[5, 5]]
-	state_file_path = "./torso_climb/states/stance2_25.npz"
+	motion_path = [[6, 5]]
+	state_file_path = "./torso_climb/states/state3_55.npz"
 	vec_env = SubprocVecEnv([make_env(env_name, i, max_steps=max_ep_steps, reward=reward_type, motion_path=motion_path, state_file=state_file_path) for i in range(workers)], start_method="spawn")
 
 	model = None
@@ -200,8 +200,8 @@ if __name__ == '__main__':
 		if os.path.isfile(args.test):
 			max_steps = 600
 			reward = Reward.NEGATIVE_DIST
-			stance = [[5, 5]]
-			state_file = "./torso_climb/states/state2_25.npz"
+			stance = [[6, 5]]
+			state_file = "./torso_climb/states/state3_55.npz"
 			env = gym.make(args.gymenv, render_mode='human', reward=reward, motion_path=stance, state_file=state_file)
 			test(env, args.sb3_algo, path_to_model=args.test)
 		else:

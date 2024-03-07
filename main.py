@@ -9,7 +9,7 @@ import time
 from stable_baselines3 import PPO, SAC
 
 MOTION = [[6, 5]]
-STATEFILE = "./torso_climb/states/stance2_25.npz"
+STATEFILE = "./torso_climb/states/state3_55.npz"
 
 env = gym.make('TorsoClimb-v0', render_mode='human', max_ep_steps=600, reward=Reward.NEGATIVE_DIST, motion_path=MOTION, state_file=STATEFILE)
 ob, info = env.reset(seed=42)
