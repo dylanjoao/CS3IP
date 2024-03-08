@@ -36,17 +36,12 @@ while True:
     # Reset on backspace
     keys = p.getKeyboardEvents()
 
-    if 104 in keys and keys[104] & p.KEY_WAS_TRIGGERED:
-        hold = not hold
-        action[6] = 1.0 if hold else 0.0
-        action[7] = 1.0 if hold else 0.0
-        print(f"Hold {hold}")
-
+    # r
     if 114 in keys and keys[114] & p.KEY_WAS_TRIGGERED:
         print(f"Score: {score}, Steps {step}")
         done = False
         truncated = False
-        pause = False
+        # pause = False
         score = 0
         step = 0
         env.reset()
