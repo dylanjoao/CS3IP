@@ -1,9 +1,12 @@
 import random
+from typing import List
+
 import numpy as np
 import pybullet as p
 import os
 
 from humanoid_climb.assets.robot_util import *
+from humanoid_climb.assets.target import Target
 
 
 class Humanoid:
@@ -37,32 +40,50 @@ class Humanoid:
         self.RIGHT_HAND = self.parts["right_hand"]
         self.LEFT_FOOT = self.parts["left_foot"]
         self.RIGHT_FOOT = self.parts["right_foot"]
+        self.effectors = [self.LEFT_HAND, self.RIGHT_HAND, self.LEFT_FOOT, self.RIGHT_FOOT]
 
         self.lh_cid = -1
         self.rh_cid = -1
         self.lf_cid = -1
         self.rf_cid = -1
 
+        self.targets = None
+
+    def set_targets(self, targets: List[Target]):
+        self.targets = targets
+
     def apply_action(self, a):
+        body_actions = a[0:17]
+        grasp_actions = a[17:21]
+
         force_gain = 1
         for i, m, power in zip(range(17), self.motors, self.motor_power):
-            m.set_motor_torque(float(force_gain * power * self.power * np.clip(a[i], -1, +1)))
+            m.set_motor_torque(float(force_gain * power * self.power * np.clip(body_actions[i], -1, +1)))
 
-    def reset(self):
-        self.detach(self.LEFT_HAND)
-        self.detach(self.RIGHT_HAND)
-        self.detach(self.LEFT_FOOT)
-        self.detach(self.RIGHT_FOOT)
+        for i, eff in enumerate(self.effectors):
+            if grasp_actions[i] > .5:
+                self.attach(eff)
+            else:
+                self.detach(eff)
 
-        self.robot_body.reset_pose(self.robot_body.initialPosition, self.robot_body.initialOrientation)
-        for joint in self.joints:
-            self.joints[joint].reset_position(0, 0)
+    def attach(self, effector):
+        if effector == self.LEFT_HAND and self.lh_cid != -1: return
+        elif effector == self.RIGHT_HAND and self.rh_cid != -1: return
+        elif effector == self.LEFT_FOOT and self.lf_cid != -1: return
+        elif effector == self.RIGHT_FOOT and self.rf_cid != -1: return
+
+        eff_pos = effector.current_position()
+        for target in self.targets:
+            dist = np.linalg.norm(np.array(eff_pos) - np.array(target.pos))
+            if dist < 0.06:
+                self.force_attach(limb_link=effector, target=target, force=1000, attach_pos=eff_pos)
+                break
 
     def force_attach(self, limb_link, target, force=-1, attach_pos=None):
         if limb_link == self.LEFT_HAND and self.lh_cid != -1: self.detach(self.LEFT_HAND)
-        if limb_link == self.RIGHT_HAND and self.rh_cid != -1: self.detach(self.RIGHT_HAND)
-        if limb_link == self.LEFT_FOOT and self.lf_cid != -1: self.detach(self.LEFT_FOOT)
-        if limb_link == self.RIGHT_FOOT and self.rf_cid != -1: self.detach(self.RIGHT_FOOT)
+        elif limb_link == self.RIGHT_HAND and self.rh_cid != -1: self.detach(self.RIGHT_HAND)
+        elif limb_link == self.LEFT_FOOT and self.lf_cid != -1: self.detach(self.LEFT_FOOT)
+        elif limb_link == self.RIGHT_FOOT and self.rf_cid != -1: self.detach(self.RIGHT_FOOT)
 
         local_pos = [0, 0, 0]
         if attach_pos is not None:
@@ -92,3 +113,13 @@ class Humanoid:
         elif limb_link == self.RIGHT_FOOT and self.rf_cid != -1:
             self._p.removeConstraint(userConstraintUniqueId=self.rf_cid)
             self.rf_cid = -1
+
+    def reset(self):
+        self.detach(self.LEFT_HAND)
+        self.detach(self.RIGHT_HAND)
+        self.detach(self.LEFT_FOOT)
+        self.detach(self.RIGHT_FOOT)
+
+        self.robot_body.reset_pose(self.robot_body.initialPosition, self.robot_body.initialOrientation)
+        for joint in self.joints:
+            self.joints[joint].reset_position(0, 0)

@@ -28,12 +28,11 @@ class HumanoidClimbEnv(gym.Env):
             self._p = BulletClient(p.DIRECT)
 
         # 17 joint actions + 4 grasp actions
-        self.action_space = gym.spaces.Box(-1, 1, (17,), np.float32)
-        self.observation_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(1,), dtype=np.float32)
+        self.action_space = gym.spaces.Box(-1, 1, (21,), np.float32)
+        self.observation_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(338,), dtype=np.float32)
 
         self.np_random, _ = gym.utils.seeding.np_random()
 
-        self.effectors = []
         self.current_stance = []
         self.desired_stance = []
         self.desired_stance_index = 0
@@ -44,7 +43,7 @@ class HumanoidClimbEnv(gym.Env):
         self._p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
         self._p.resetDebugVisualizerCamera(cameraDistance=4, cameraYaw=-90, cameraPitch=0, cameraTargetPosition=[0, 0, 3])
         self._p.setGravity(0, 0, -9.8)
-        self._p.setPhysicsEngineParameter(fixedTimeStep=1.0 / 240., numSolverIterations=100, numSubSteps=10)
+        # self._p.setPhysicsEngineParameter(fixedTimeStep=1.0 / 240., numSolverIterations=100, numSubSteps=10)
 
         self.floor = self._p.loadURDF("plane.urdf")
         # self.wall = Wall(self._p, pos=[0.48, 0, 2.5]).id
@@ -63,32 +62,127 @@ class HumanoidClimbEnv(gym.Env):
                 self._p.addUserDebugText(text=f"{len(self.targets) - 1}", textPosition=position, textSize=0.7, lifeTime=0.0,
                                    textColorRGB=[0.0, 0.0, 1.0])
 
+        self.robot.set_targets(self.targets)
+
     def step(self, action):
 
         self._p.stepSimulation()
+        # self.steps += 1
 
-        return [0], 0, False, False, {}
+        self.robot.apply_action(action)
+        self.update_stance()
+
+        ob = self._get_obs()
+        info = self._get_info()
+
+        terminated = self.terminate_check()
+        truncated = self.truncate_check()
+
+        return ob, 0, terminated, truncated, info
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
 
         self.robot.reset()
         self.steps = 0
+        self.current_stance = [-1, -1, -1, -1]
         self.desired_stance_index = 0
         self.desired_stance = self.motion_path[self.desired_stance_index]
+        self.best_dist_to_stance = self.get_distance_from_desired_stance()
 
         ob = self._get_obs()
         info = self._get_info()
 
-        self.robot.force_attach(self.robot.LEFT_FOOT, self.targets[25], force=1000)
+        # self.robot.force_attach(self.robot.LEFT_FOOT, self.targets[25], force=1000)
+
+        for i, target in enumerate(self.targets):
+            colour = [0.0, 0.7, 0.1, 0.75] if i in self.desired_stance else [1.0, 0, 0, 0.75]
+            self._p.changeVisualShape(objectUniqueId=target.id, linkIndex=-1, rgbaColor=colour)
 
         return np.array(ob, dtype=np.float32), info
 
+    def update_stance(self):
+        self.get_stance_for_effector(0, self.robot.lh_cid)
+        self.get_stance_for_effector(1, self.robot.rh_cid)
+        self.get_stance_for_effector(2, self.robot.lf_cid)
+        self.get_stance_for_effector(3, self.robot.rf_cid)
+
+        # if self.render_mode == 'human':
+        #     torso_pos = self.robot.robot_body.current_position()
+        #     torso_pos[1] += 0.15
+        #     torso_pos[2] += 0.35
+        #     self._p.addUserDebugText(text=f"{self.current_stance}", textPosition=torso_pos, textSize=1, lifeTime=1 / 15,
+        #                        textColorRGB=[1.0, 0.0, 1.0])
+
+    def get_stance_for_effector(self, eff_index, eff_cid):
+        if eff_cid != -1:
+            target_id = self._p.getConstraintInfo(constraintUniqueId=eff_cid)[2]
+            for i, target in enumerate(self.targets):
+                if target.id == target_id:
+                    self.current_stance[eff_index] = i
+                    return i
+        self.current_stance[eff_index] = -1
+        return -1
+
+    def get_distance_from_desired_stance(self):
+        dist_away = [float('inf') for _ in range(len(self.robot.effectors))]
+        states = self._p.getLinkStates(self.robot.robot, linkIndices=[eff.bodyPartIndex for eff in self.robot.effectors])
+        for i, effector in enumerate(self.robot.effectors):
+            if self.desired_stance[i] == -1:
+                dist_away[i] = 0
+                continue
+
+            desired_eff_pos = self._p.getBasePositionAndOrientation(bodyUniqueId=self.targets[self.desired_stance[i]].id)[0]
+            current_eff_pos = states[i][0]
+            distance = np.abs(np.linalg.norm(np.array(desired_eff_pos) - np.array(current_eff_pos)))
+            dist_away[i] = distance
+        return dist_away
+
+    def terminate_check(self):
+        terminated = True if self.desired_stance_index > len(self.motion_path) - 1 else False
+        return terminated
+
+    def truncate_check(self):
+        truncated = True if self.steps >= self.max_ep_steps else False
+        return truncated
+
     def _get_obs(self):
-        return [0]
+        obs = []
+
+        states = self._p.getLinkStates(self.robot.robot, linkIndices=[joint.jointIndex for joint in self.robot.ordered_joints], computeLinkVelocity=1)
+
+        for state in states:
+            worldPos, worldOri, localInertialPos, _, _, _, linearVel, angVel = state
+            obs += (worldPos + worldOri + localInertialPos + linearVel + angVel)
+
+        eff_positions = [eff.current_position() for eff in self.robot.effectors]
+        eff_dist_to_desired = [-1 for _ in range(len(self.robot.effectors))]
+        for i, c_stance in enumerate(self.desired_stance):
+            if c_stance == -1:
+                obs += [-1, -1, -1, 0]
+                continue
+
+            eff_target = self.targets[c_stance]
+            dist = np.linalg.norm(np.array(eff_target.pos) - np.array(eff_positions[i]))
+
+            target_obs = eff_target.pos.copy() + [dist]
+            obs += target_obs
+
+        obs += self.current_stance
+        obs += self.desired_stance
+        obs += [1 if self.current_stance[i] == self.desired_stance[i] else 0 for i in range(len(self.current_stance))]
+        obs += self.best_dist_to_stance
+        obs += [1 if self.is_touching_body(self.floor) else 0]
+        # obs += [1 if self.is_touching_body(self.wall) else 0]
+
+        return np.array(obs, dtype=np.float32)
 
     def _get_info(self):
         return {}
+
+    def is_touching_body(self, body, link_indexA=-1):
+        contact_points = self._p.getContactPoints(bodyA=self.robot.robot, linkIndexA=link_indexA, bodyB=body)
+        return len(contact_points) > 0
 
     def seed(self, seed=None):
         self.np_random, seed = gym.utils.seeding.np_random(seed)
