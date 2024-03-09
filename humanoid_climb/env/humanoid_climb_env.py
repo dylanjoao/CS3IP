@@ -46,8 +46,8 @@ class HumanoidClimbEnv(gym.Env):
         # self._p.setPhysicsEngineParameter(fixedTimeStep=1.0 / 240., numSolverIterations=100, numSubSteps=10)
 
         self.floor = self._p.loadURDF("plane.urdf")
-        # self.wall = Wall(self._p, pos=[0.48, 0, 2.5]).id
-        self.robot = Humanoid(self._p, [0, 0, 1.175], [0, 0, 0, 1], 0.48, None, False)
+        self.wall = Wall(self._p, pos=[0.48, 0, 2.5]).id
+        self.robot = Humanoid(self._p, [0, 0, 1.175], [0, 0, 0, 1], 0.48, None, True)
 
         self.targets = []
         for i in range(1, 8):  # Vertical
@@ -75,10 +75,14 @@ class HumanoidClimbEnv(gym.Env):
         ob = self._get_obs()
         info = self._get_info()
 
+        reward = self.calculate_reward_negative_distance()
+        reached = self.check_reached_stance()
+
+
         terminated = self.terminate_check()
         truncated = self.truncate_check()
 
-        return ob, 0, terminated, truncated, info
+        return ob, reward, terminated, truncated, info
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
@@ -100,6 +104,41 @@ class HumanoidClimbEnv(gym.Env):
             self._p.changeVisualShape(objectUniqueId=target.id, linkIndex=-1, rgbaColor=colour)
 
         return np.array(ob, dtype=np.float32), info
+
+    def calculate_reward_negative_distance(self):
+        current_dist_away = self.get_distance_from_desired_stance()
+
+        is_closer = 1 if np.sum(current_dist_away) < np.sum(self.best_dist_to_stance) else 0
+        if is_closer: self.best_dist_to_stance = current_dist_away.copy()
+
+        reward = -1 * np.sum(current_dist_away)
+        reward += 500 if self.current_stance == self.desired_stance else 0
+        self.visualise_reward(reward, -6, 0)
+
+        return reward
+
+    def check_reached_stance(self):
+        reached = False
+
+        # Check if stance complete
+        if self.current_stance == self.desired_stance:
+            reached = True
+
+            self.desired_stance_index += 1
+            if self.desired_stance_index > len(self.motion_path) - 1: return
+
+            new_stance = self.motion_path[self.desired_stance_index]
+
+            for i, v in enumerate(self.desired_stance):
+                self._p.changeVisualShape(objectUniqueId=self.targets[v].id, linkIndex=-1, rgbaColor=[1.0, 0.0, 0.0, 0.75])
+            self.desired_stance = new_stance
+            for i, v in enumerate(self.desired_stance):
+                self._p.changeVisualShape(objectUniqueId=self.targets[v].id, linkIndex=-1, rgbaColor=[0.0, 0.7, 0.1, 0.75])
+
+            # Reset best_dist
+            self.best_dist_to_stance = self.get_distance_from_desired_stance()
+
+        return reached
 
     def update_stance(self):
         self.get_stance_for_effector(0, self.robot.lh_cid)
@@ -156,7 +195,6 @@ class HumanoidClimbEnv(gym.Env):
             obs += (worldPos + worldOri + localInertialPos + linearVel + angVel)
 
         eff_positions = [eff.current_position() for eff in self.robot.effectors]
-        eff_dist_to_desired = [-1 for _ in range(len(self.robot.effectors))]
         for i, c_stance in enumerate(self.desired_stance):
             if c_stance == -1:
                 obs += [-1, -1, -1, 0]
@@ -173,7 +211,7 @@ class HumanoidClimbEnv(gym.Env):
         obs += [1 if self.current_stance[i] == self.desired_stance[i] else 0 for i in range(len(self.current_stance))]
         obs += self.best_dist_to_stance
         obs += [1 if self.is_touching_body(self.floor) else 0]
-        # obs += [1 if self.is_touching_body(self.wall) else 0]
+        obs += [1 if self.is_touching_body(self.wall) else 0]
 
         return np.array(obs, dtype=np.float32)
 
@@ -187,3 +225,11 @@ class HumanoidClimbEnv(gym.Env):
     def seed(self, seed=None):
         self.np_random, seed = gym.utils.seeding.np_random(seed)
         return [seed]
+
+    def visualise_reward(self, reward, min, max):
+        if self.render_mode != 'human': return
+        value = np.clip(reward, min, max)
+        normalized_value = (value - min) / (max - min) * (1 - 0) + 0
+        colour = [0.0, normalized_value / 1.0, 0.0, 1.0] if reward > 0.0 else [normalized_value / 1.0, 0.0, 0.0, 1.0]
+        self._p.changeVisualShape(objectUniqueId=self.robot.robot, linkIndex=-1, rgbaColor=colour)
+

@@ -9,7 +9,7 @@ import pybullet as p
 import time
 from stable_baselines3 import PPO, SAC
 
-MOTION = [[6, 5, 2, -1]]
+MOTION = [[10, 9, 2, -1]]
 STATEFILE = "./torso_climb/states/state3_55.npz"
 
 # env = gym.make('TorsoClimb-v0', render_mode='human', max_ep_steps=600, reward=Reward.NEGATIVE_DIST, motion_path=MOTION, state_file=STATEFILE)
@@ -25,6 +25,10 @@ pause = False
 hold = True
 
 action = [0.0 for i in range(env.action_space.shape[0])]
+action[-4] = 1
+action[-3] = 1
+action[-2] = 1
+action[-1] = 1
 
 while True:
 
