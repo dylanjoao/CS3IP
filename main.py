@@ -9,11 +9,11 @@ import pybullet as p
 import time
 from stable_baselines3 import PPO, SAC
 
-MOTION = [[10, 9, 2, -1]]
+MOTION = [[10, 9, -1, -1]]
 STATEFILE = "./torso_climb/states/state3_55.npz"
 
 # env = gym.make('TorsoClimb-v0', render_mode='human', max_ep_steps=600, reward=Reward.NEGATIVE_DIST, motion_path=MOTION, state_file=STATEFILE)
-env = gym.make('HumanoidClimb-v0', render_mode='human', max_ep_steps=15000, motion_path=MOTION)
+env = gym.make('HumanoidClimb-v0', render_mode='human', max_ep_steps=1000, motion_path=MOTION)
 ob, info = env.reset(seed=42)
 
 state = env.reset()

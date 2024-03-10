@@ -61,7 +61,7 @@ class Humanoid:
             m.set_motor_torque(float(force_gain * power * self.power * np.clip(body_actions[i], -1, +1)))
 
         for i, eff in enumerate(self.effectors):
-            if grasp_actions[i] > .5:
+            if grasp_actions[i] > 0:
                 self.attach(eff)
             else:
                 self.detach(eff)

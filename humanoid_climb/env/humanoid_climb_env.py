@@ -29,7 +29,7 @@ class HumanoidClimbEnv(gym.Env):
 
         # 17 joint actions + 4 grasp actions
         self.action_space = gym.spaces.Box(-1, 1, (21,), np.float32)
-        self.observation_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(338,), dtype=np.float32)
+        self.observation_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(306,), dtype=np.float32)
 
         self.np_random, _ = gym.utils.seeding.np_random()
 
@@ -47,7 +47,7 @@ class HumanoidClimbEnv(gym.Env):
 
         self.floor = self._p.loadURDF("plane.urdf")
         self.wall = Wall(self._p, pos=[0.48, 0, 2.5]).id
-        self.robot = Humanoid(self._p, [0, 0, 1.175], [0, 0, 0, 1], 0.48, None, True)
+        self.robot = Humanoid(self._p, [0, 0, 1.175], [0, 0, 0, 1], 0.48, None, False)
 
         self.targets = []
         for i in range(1, 8):  # Vertical
@@ -55,7 +55,7 @@ class HumanoidClimbEnv(gym.Env):
             h_spacing = 0.6
             for j in range(1, 5):  # Horizontal
                 v_offset = 0.2 * (j & 1) - 0.4
-                v_spacing = 0.7
+                v_spacing = 0.65
                 position = [0.40, (j * h_spacing) + h_offset, i * v_spacing + v_offset]
                 self.targets.append(Target(self._p, pos=position))
                 position[2] += 0.05
@@ -67,7 +67,7 @@ class HumanoidClimbEnv(gym.Env):
     def step(self, action):
 
         self._p.stepSimulation()
-        # self.steps += 1
+        self.steps += 1
 
         self.robot.apply_action(action)
         self.update_stance()
@@ -112,8 +112,8 @@ class HumanoidClimbEnv(gym.Env):
         if is_closer: self.best_dist_to_stance = current_dist_away.copy()
 
         reward = -1 * np.sum(current_dist_away)
-        reward += 500 if self.current_stance == self.desired_stance else 0
-        self.visualise_reward(reward, -6, 0)
+        reward += 1000 if self.current_stance == self.desired_stance else 0
+        # self.visualise_reward(reward, -6, 0)
 
         return reward
 
@@ -146,12 +146,12 @@ class HumanoidClimbEnv(gym.Env):
         self.get_stance_for_effector(2, self.robot.lf_cid)
         self.get_stance_for_effector(3, self.robot.rf_cid)
 
-        # if self.render_mode == 'human':
-        #     torso_pos = self.robot.robot_body.current_position()
-        #     torso_pos[1] += 0.15
-        #     torso_pos[2] += 0.35
-        #     self._p.addUserDebugText(text=f"{self.current_stance}", textPosition=torso_pos, textSize=1, lifeTime=1 / 15,
-        #                        textColorRGB=[1.0, 0.0, 1.0])
+        if self.render_mode == 'human':
+            torso_pos = self.robot.robot_body.current_position()
+            torso_pos[1] += 0.15
+            torso_pos[2] += 0.35
+            self._p.addUserDebugText(text=f"{self.current_stance}", textPosition=torso_pos, textSize=1, lifeTime=1 / 60,
+                               textColorRGB=[1.0, 0.0, 1.0])
 
     def get_stance_for_effector(self, eff_index, eff_cid):
         if eff_cid != -1:
@@ -216,7 +216,12 @@ class HumanoidClimbEnv(gym.Env):
         return np.array(obs, dtype=np.float32)
 
     def _get_info(self):
-        return {}
+        info = dict()
+
+        success = True if self.current_stance == self.desired_stance else False
+        info['is_success'] = success
+
+        return info
 
     def is_touching_body(self, body, link_indexA=-1):
         contact_points = self._p.getContactPoints(bodyA=self.robot.robot, linkIndexA=link_indexA, bodyB=body)
