@@ -9,7 +9,7 @@ import time
 from stable_baselines3 import PPO, SAC
 
 MOTION = [[2, 1], [2, 5], [5, 5]]
-env = gym.make('TorsoClimb-v0', render_mode='human', max_ep_steps=600, reward=Reward.NEGATIVE_DIST, motion_path=MOTION, state_file=None)
+env = gym.make('TorsoClimb-v0', render_mode='human', max_ep_steps=1600, reward=Reward.NEGATIVE_DIST, motion_path=MOTION, state_file=None)
 obs, info = env.reset()
 
 state = env.reset()

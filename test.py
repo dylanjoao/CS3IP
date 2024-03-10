@@ -6,50 +6,35 @@ import pybullet_data
 import numpy as np
 import os
 
+from pybullet_utils.bullet_client import BulletClient
+
+from humanoid_climb.assets.humanoid import Humanoid
 from pendulum_climb.assets.pendulum import Pendulum
 
-current_directory = os.getcwd()
 
-# Can alternatively pass in p.DIRECT
-client = p.connect(p.GUI)
-p.setGravity(0, 0, -9.8, physicsClientId=client)
-p.setAdditionalSearchPath(pybullet_data.getDataPath())
-p.setRealTimeSimulation(1)
+if __name__ == "__main__":
+
+	current_directory = os.getcwd()
+
+	# Can alternatively pass in p.DIRECT
+	bullet_client = BulletClient(connection_mode=p.GUI)
+	bullet_client.setGravity(0, 0, -9.8)
+	bullet_client.setAdditionalSearchPath(pybullet_data.getDataPath())
+	# p.setPhysicsEngineParameter(fixedTimeStep=1.0 / 240., numSolverIterations=100, numSubSteps=10)
+	p.setPhysicsEngineParameter(deterministicOverlappingPairs=1)
+	# bullet_client.setRealTimeSimulation(1)
+
+	# flags = p.URDF_USE_SELF_COLLISION | p.URDF_USE_SELF_COLLISION_EXCLUDE_ALL_PARENTS | p.URDF_GOOGLEY_UNDEFINED_COLORS
+	flags = p.URDF_GOOGLEY_UNDEFINED_COLORS
+	plane = bullet_client.loadURDF("plane.urdf")
+
+	humanoid = Humanoid(bullet_client, [0, 0, 2], [0, 0, 0, 1], 0.48, None, True)
+	params = [bullet_client.addUserDebugParameter(motor.joint_name, -1, +1) for motor in humanoid.motors]
+
+	while bullet_client.isConnected():
+		actions = [bullet_client.readUserDebugParameter(param) for param in params]
+		humanoid.apply_action(actions)
+		bullet_client.stepSimulation()
 
 
-def apply_action(body, actions, motors, power):
-	forces = [0. for i in range(len(motors))]
-	for m in range(len(motors)):
-		limit = 15
-		ac = np.clip(actions[m], -limit, limit)
-		forces[m] = power[m] * ac
-	p.setJointMotorControlArray(body, motors, controlMode=p.TORQUE_CONTROL, forces=forces)
-
-
-# flags = p.URDF_MAINTAIN_LINK_ORDER + p.URDF_USE_SELF_COLLISION
-flags = p.URDF_USE_SELF_COLLISION_EXCLUDE_ALL_PARENTS
-plane = p.loadURDF("plane.urdf")
-# humanoid = p.loadURDF(current_directory + "/torso_climb/assets/pyb_torso_2.xml", basePosition=[0, 0, 2], baseOrientation=[0.707, 0, 0, 0.707], flags=flags, globalScaling=0.25, useFixedBase=True)
-# humanoid = p.loadURDF(current_directory + "/torso_climb/assets/pyb_torso.xml", basePosition=[0, 0, 2], flags=flags, useFixedBase=True)
-humanoid = p.loadMJCF(current_directory + "/torso_climb/assets/mjcf_torso.xml")
-p.createConstraint(humanoid[0], -1, -1, -1, p.JOINT_FIXED, [0, 0, 0], [0, 0, 0, ], [0, 0, 1])
-
-debug_params = []
-motors = []
-
-body = humanoid[0]
-for i in range(p.getNumJoints(body)):
-	ji = p.getJointInfo(body, i)
-	if ji[2] == p.JOINT_REVOLUTE:
-		motors.append(i)
-		debug_params.append(p.addUserDebugParameter(ji[1].decode("utf-8"), -1, 1, 0.0))
-
-power = [75 for i in range(len(debug_params))]
-
-while True:
-	# p.stepSimulation()
-	events = p.getKeyboardEvents()
-	actions = [p.readUserDebugParameter(i) for i in debug_params]
-	apply_action(body, actions, motors, power)
-
-p.disconnect()
+	bullet_client.disconnect()
