@@ -119,7 +119,7 @@ class HumanoidClimbEnv(gym.Env):
         if is_closer: self.best_dist_to_stance = current_dist_away.copy()
 
         reward = np.clip(-1 * np.sum(current_dist_away), -2, float('inf'))
-
+        reward += 1000 if self.current_stance == self.desired_stance else 0
         if self.is_on_floor():
             reward += (self.max_ep_steps - self.steps) * -2
 

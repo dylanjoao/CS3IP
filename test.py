@@ -33,6 +33,7 @@ if __name__ == "__main__":
 
 	while bullet_client.isConnected():
 		actions = [bullet_client.readUserDebugParameter(param) for param in params]
+		actions += (0.0, 0.0, 0.0, 0.0)
 		humanoid.apply_action(actions)
 		bullet_client.stepSimulation()
 

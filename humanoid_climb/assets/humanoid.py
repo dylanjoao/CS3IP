@@ -83,7 +83,7 @@ class Humanoid:
         eff_pos = effector.current_position()
         for target in self.targets:
             dist = np.linalg.norm(np.array(eff_pos) - np.array(target.pos))
-            if dist < 0.07:
+            if dist < 0.1:
                 self.force_attach(limb_link=effector, target=target, force=1000, attach_pos=eff_pos)
                 break
 

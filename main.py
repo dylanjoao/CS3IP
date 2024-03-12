@@ -9,9 +9,9 @@ import pybullet as p
 import time
 from stable_baselines3 import PPO, SAC
 
-MOTION = [[10, 9, 2, -1]]
-STATEFILE = "./humanoid_climb/states/state_10_9_n_n.npz"
-ACTION_OVERRIDE = [1, 1, -1, -1]
+MOTION = [[10, 9, 2, 1]]
+STATEFILE = "./humanoid_climb/states/state_10_9_2_n.npz"
+ACTION_OVERRIDE = [1, 1, 1, -1]
 
 # env = gym.make('TorsoClimb-v0', render_mode='human', max_ep_steps=600, reward=Reward.NEGATIVE_DIST, motion_path=MOTION, state_file=STATEFILE)
 env = gym.make('HumanoidClimb-v0', render_mode='human', max_ep_steps=1000, motion_path=MOTION, state_file=STATEFILE, action_override=ACTION_OVERRIDE)
@@ -46,7 +46,7 @@ while True:
         print(f"Score: {score}, Steps {step}")
         done = False
         truncated = False
-        # pause = False
+        pause = False
         score = 0
         step = 0
         env.reset()

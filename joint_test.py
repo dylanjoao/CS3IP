@@ -8,7 +8,9 @@ physicsClientId = client._client
 
 p.setGravity(0, 0, -9.8, physicsClientId=physicsClientId)
 p.setAdditionalSearchPath(pybullet_data.getDataPath())
-p.setRealTimeSimulation(1, physicsClientId)
+
+# SET REAL TIME SIMULATION FUCKS setJointMotorControl
+# p.setRealTimeSimulation(1, physicsClientId)
 
 plane = p.loadURDF("plane.urdf")
 torso = Torso(physicsClientId, [0, 0, 1], [0, 0, 0, 1], fixedBase=True)
@@ -24,4 +26,4 @@ while True:
 	actions = [p.readUserDebugParameter(i, physicsClientId) for i in debug_params]
 	actions += (0.0, 0.0)
 	torso.apply_action(actions)
-	# p.stepSimulation(physicsClientId)
+	p.stepSimulation(physicsClientId)
