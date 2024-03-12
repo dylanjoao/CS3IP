@@ -6,13 +6,14 @@ import gymnasium as gym
 import numpy as np
 import time
 import torso_climb
+import humanoid_climb
 
 from torso_climb.env.torso_climb_env import Reward
 
 NUM_SAMPLES = 1000
-INIT_STATE_FILE = "./torso_climb/states/state2_25.npz"
-MODEL_FILE = "./torso_climb/models/stance3_55.zip"
-STANCE = [[5, 5]]
+INIT_STATE_FILE = None
+MODEL_FILE = "./humanoid_climb/models/1_10_9_n_n.zip"
+STANCE = [[10, 9, -1, -1]]
 
 
 def get_state(bodyIndex, pid):
@@ -43,7 +44,7 @@ def set_state(bodyIndex, pid, state):
 		p.resetJointState(bodyIndex, joint, joints[joint][0], joints[joint][1], physicsClientId=pid)
 
 
-env = gym.make("TorsoClimb-v0", max_ep_steps=600, reward=Reward.NEGATIVE_DIST, motion_path=STANCE, state_file=INIT_STATE_FILE)
+env = gym.make("HumanoidClimb-v0", max_ep_steps=600, motion_path=STANCE)
 model = sb.PPO.load(MODEL_FILE, env=env)
 obs = env.reset()[0]
 
@@ -82,5 +83,5 @@ for i in range(NUM_SAMPLES):
 	env.reset()
 
 env.close()
-np.savez(r'./torso_climb/states/out2.npz', states)
+np.savez(r'./humanoid_climb/states/out.npz', states)
 print(f"Saved {saved} samples in {time.perf_counter() - start} seconds")

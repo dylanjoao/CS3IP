@@ -52,9 +52,9 @@ class CustomCallback(BaseCallback):
 		self.logger.record("climb/rollout_count", self.rollout_count)
 
 
-def make_env(env_id: str, rank: int, seed: int = 0, max_steps: int = 1000, motion_path: List[List[int]] = [[10, 9, -1, -1]]):
+def make_env(env_id: str, rank: int, seed: int = 0, max_steps: int = 1000, motion_path: List[List[int]] = [[10, 9, -1, -1]], state_file: str = None, action_override: [int] = None) -> gym.Env:
 	def _init():
-		env = gym.make(env_id, render_mode=None, max_ep_steps=max_steps, motion_path=motion_path)
+		env = gym.make(env_id, render_mode=None, max_ep_steps=max_steps, motion_path=motion_path, state_file=state_file, action_override=action_override)
 		m_env = Monitor(env)
 		m_env.reset(seed=seed + rank)
 		return m_env
@@ -79,8 +79,10 @@ def train(env_name, sb3_algo, workers, path_to_model=None):
 	)
 
 	max_ep_steps = 600
-	motion_path = [[10, 9, -1, -1]]
-	vec_env = SubprocVecEnv([make_env(env_name, i, max_steps=max_ep_steps, motion_path=motion_path) for i in range(workers)], start_method="spawn")
+	motion_path = [[10, 9, 2, -1]]
+	statefile = "./humanoid_climb/states/state_10_9_n_n.npz"
+	action_override = [1, 1, -1, -1]
+	vec_env = SubprocVecEnv([make_env(env_name, i, max_steps=max_ep_steps, motion_path=motion_path, state_file=statefile, action_override=action_override) for i in range(workers)], start_method="spawn")
 
 	model = None
 	save_path = f"{model_dir}/{run.id}"
@@ -137,8 +139,6 @@ def test(env, sb3_algo, path_to_model):
 
 	while True:
 		action, _state = model.predict(obs, deterministic=True)
-		action[0][17] = 1
-		action[0][18] = 1
 		obs, reward, done, info = vec_env.step(action)
 		score += reward
 		step += 1
@@ -182,8 +182,10 @@ if __name__ == '__main__':
 	if args.test:
 		if os.path.isfile(args.test):
 			max_steps = 600
-			stance = [[10, 9, -1, -1]]
-			env = gym.make(args.gymenv, render_mode='human', motion_path=stance, max_ep_steps=max_steps)
+			stance = [[10, 9, 2, -1]]
+			statefile = "./humanoid_climb/states/state_10_9_n_n.npz"
+			a_override = [1, 1, -1, -1]
+			env = gym.make(args.gymenv, render_mode='human', motion_path=stance, max_ep_steps=max_steps, state_file=statefile, action_override=a_override)
 			test(env, args.sb3_algo, path_to_model=args.test)
 		else:
 			print(f'{args.test} not found.')

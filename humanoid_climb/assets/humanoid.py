@@ -22,6 +22,9 @@ class Humanoid:
         if fixedBase:
             bullet_client.createConstraint(self.robot, -1, -1, -1, p.JOINT_FIXED, [0, 0, 0], [0, 0, 0, 1], pos)
 
+        if statefile is not None:
+            self.state_file = np.load(statefile)
+
         (self.parts, self.joints, self.ordered_joints, self.robot_body) = addToScene(bullet_client, [self.robot])
 
         self.motor_names = ["abdomen_z", "abdomen_y", "abdomen_x"]
@@ -52,9 +55,14 @@ class Humanoid:
     def set_targets(self, targets: List[Target]):
         self.targets = targets
 
-    def apply_action(self, a):
+    def apply_action(self, a, override=None):
         body_actions = a[0:17]
         grasp_actions = a[17:21]
+
+        if override is not None:
+            for i in range(len(override)):
+                if override[i] != -1:
+                    grasp_actions[i] = override[i]
 
         force_gain = 1
         for i, m, power in zip(range(17), self.motors, self.motor_power):
@@ -123,3 +131,19 @@ class Humanoid:
         self.robot_body.reset_pose(self.robot_body.initialPosition, self.robot_body.initialOrientation)
         for joint in self.joints:
             self.joints[joint].reset_position(0, 0)
+
+    def set_state(self, state):
+        pos = state[0:3]
+        ori = state[3:7]
+        numJoints = self._p.getNumJoints(self.robot)
+        joints = [state[(i * 2) + 7:(i * 2) + 9] for i in range(numJoints)]
+
+        self._p.resetBasePositionAndOrientation(self.robot, pos, ori)
+        for joint in range(numJoints):
+            self._p.resetJointState(self.robot, joint, joints[joint][0], joints[joint][1])
+
+    def initialise_from_state(self):
+        upper = len(self.state_file['arr_0'])
+        rand = random.randint(0, upper - 1)
+        state = self.state_file['arr_0'][rand]
+        self.set_state(state)
