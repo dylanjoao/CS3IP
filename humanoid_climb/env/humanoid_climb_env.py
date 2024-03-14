@@ -15,11 +15,12 @@ from humanoid_climb.assets.wall import Wall
 class HumanoidClimbEnv(gym.Env):
     metadata = {'render_modes': ['human', 'rgb_array'], 'render_fps': 60}
 
-    def __init__(self, motion_path: List[int], render_mode: Optional[str] = None, max_ep_steps: Optional[int] = 602,
+    def __init__(self, motion_path: List[int], motion_exclude_targets: List[int], render_mode: Optional[str] = None, max_ep_steps: Optional[int] = 602,
                  state_file: Optional[str] = None, action_override: Optional[int] = [-1, -1, -1, -1]):
         self.render_mode = render_mode
         self.max_ep_steps = max_ep_steps
         self.motion_path = motion_path
+        self.motion_exclude_targets = motion_exclude_targets
         self.steps = 0
         self.action_override = action_override
 
@@ -48,7 +49,7 @@ class HumanoidClimbEnv(gym.Env):
         self._p.resetDebugVisualizerCamera(cameraDistance=4, cameraYaw=-90, cameraPitch=0,
                                            cameraTargetPosition=[0, 0, 3])
         self._p.setGravity(0, 0, -9.8)
-        self._p.setPhysicsEngineParameter(fixedTimeStep=1.0 / 240., numSubSteps=5)
+        self._p.setPhysicsEngineParameter(fixedTimeStep=1.0 / 240., numSubSteps=10)
 
         self.floor = self._p.loadURDF("plane.urdf")
         self.wall = Wall(self._p, pos=[0.48, 0, 2.5]).id
@@ -98,7 +99,8 @@ class HumanoidClimbEnv(gym.Env):
         self.steps = 0
         self.current_stance = [-1, -1, -1, -1]
         self.desired_stance_index = 0
-        self.desired_stance = self.motion_path[self.desired_stance_index]
+        self.desired_stance = self.motion_path[0]
+        self.robot.exclude_targets = self.motion_exclude_targets[0]
         self.best_dist_to_stance = self.get_distance_from_desired_stance()
 
         ob = self._get_obs()
@@ -176,6 +178,7 @@ class HumanoidClimbEnv(gym.Env):
             if self.desired_stance_index > len(self.motion_path) - 1: return
 
             new_stance = self.motion_path[self.desired_stance_index]
+            self.robot.exclude_targets = self.motion_exclude_targets[self.desired_stance_index]
 
             for i, v in enumerate(self.desired_stance):
                 self._p.changeVisualShape(objectUniqueId=self.targets[v].id, linkIndex=-1,

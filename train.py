@@ -79,9 +79,10 @@ def train(env_name, sb3_algo, workers, path_to_model=None):
 	)
 
 	max_ep_steps = 600
-	motion_path = [[10, 9, 2, -1]]
-	statefile = "./humanoid_climb/states/state_10_9_n_n.npz"
-	action_override = [1, 1, -1, -1]
+	motion_path = [[10, 13, 2, 1]]
+	statefile = "./humanoid_climb/states/state_10_9_2_1_v3.npz"
+	action_override = [1, -1, 1, 1]
+	exclude_target = []
 	vec_env = SubprocVecEnv([make_env(env_name, i, max_steps=max_ep_steps, motion_path=motion_path, state_file=statefile, action_override=action_override) for i in range(workers)], start_method="spawn")
 
 	model = None
@@ -182,10 +183,11 @@ if __name__ == '__main__':
 	if args.test:
 		if os.path.isfile(args.test):
 			max_steps = 600
-			stance = [[10, 9, 2, -1]]
-			statefile = "./humanoid_climb/states/state_10_9_n_n.npz"
-			a_override = [1, 1, -1, -1]
-			env = gym.make(args.gymenv, render_mode='human', motion_path=stance, max_ep_steps=max_steps, state_file=statefile, action_override=a_override)
+			stance = [[10, 13, 2, 1]]
+			statefile = "./humanoid_climb/states/state_10_9_2_1_v3.npz"
+			exclude = [[9]]
+			a_override = [1, -1, 1, 1]
+			env = gym.make(args.gymenv, render_mode='human', motion_path=stance, motion_exclude_targets=exclude, max_ep_steps=max_steps, state_file=statefile, action_override=a_override)
 			test(env, args.sb3_algo, path_to_model=args.test)
 		else:
 			print(f'{args.test} not found.')

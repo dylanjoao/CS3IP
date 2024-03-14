@@ -10,11 +10,11 @@ import humanoid_climb
 
 from torso_climb.env.torso_climb_env import Reward
 
-NUM_SAMPLES = 1000
-INIT_STATE_FILE = "./humanoid_climb/states/state_10_9_n_n.npz"
-MODEL_FILE = "./humanoid_climb/models/2_10_9_2_n.zip"
-O_ACTION = [1, 1, -1, -1]
-STANCE = [[10, 9, 2, -1]]
+NUM_SAMPLES = 50
+INIT_STATE_FILE = "./humanoid_climb/states/state_10_9_2_n.npz"
+MODEL_FILE = "./humanoid_climb/models/3_10_9_2_1.zip"
+O_ACTION = [1, 1, 1, -1]
+STANCE = [10, 9, 2, 1]
 
 
 def get_state(bodyIndex, pid):
@@ -30,6 +30,7 @@ def get_state(bodyIndex, pid):
 	final_state += ori
 	for s in jointStates:
 		final_state += s
+	final_state += STANCE
 
 	return np.array(final_state)
 
@@ -45,7 +46,7 @@ def set_state(bodyIndex, pid, state):
 		p.resetJointState(bodyIndex, joint, joints[joint][0], joints[joint][1], physicsClientId=pid)
 
 
-env = gym.make("HumanoidClimb-v0", max_ep_steps=600, motion_path=STANCE, state_file=INIT_STATE_FILE, action_override=O_ACTION)
+env = gym.make("HumanoidClimb-v0", max_ep_steps=600, motion_path=[STANCE], state_file=INIT_STATE_FILE, action_override=O_ACTION)
 model = sb.PPO.load(MODEL_FILE, env=env)
 obs = env.reset()[0]
 
@@ -85,4 +86,4 @@ for i in range(NUM_SAMPLES):
 
 env.close()
 np.savez(r'./humanoid_climb/states/out.npz', states)
-print(f"Saved {saved} samples in {time.perf_counter() - start} seconds")
+print(f"Saved {saved} samples in {time.perf_counter() - start} seconds with a {(saved/NUM_SAMPLES)*100}% success rate")

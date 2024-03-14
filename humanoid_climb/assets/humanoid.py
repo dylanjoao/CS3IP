@@ -24,6 +24,7 @@ class Humanoid:
 
         if statefile is not None:
             self.state_file = np.load(statefile)
+        self.exclude_targets = []
 
         (self.parts, self.joints, self.ordered_joints, self.robot_body) = addToScene(bullet_client, [self.robot])
 
@@ -75,10 +76,14 @@ class Humanoid:
                 self.detach(eff)
 
     def attach(self, effector):
-        if effector == self.LEFT_HAND and self.lh_cid != -1: return
-        elif effector == self.RIGHT_HAND and self.rh_cid != -1: return
-        elif effector == self.LEFT_FOOT and self.lf_cid != -1: return
-        elif effector == self.RIGHT_FOOT and self.rf_cid != -1: return
+        if effector == self.LEFT_HAND and self.lh_cid != -1:
+            return
+        elif effector == self.RIGHT_HAND and self.rh_cid != -1:
+            return
+        elif effector == self.LEFT_FOOT and self.lf_cid != -1:
+            return
+        elif effector == self.RIGHT_FOOT and self.rf_cid != -1:
+            return
 
         eff_pos = effector.current_position()
         for target in self.targets:
@@ -88,14 +93,27 @@ class Humanoid:
                 break
 
     def force_attach(self, limb_link, target, force=-1, attach_pos=None):
-        if limb_link == self.LEFT_HAND and self.lh_cid != -1: self.detach(self.LEFT_HAND)
-        elif limb_link == self.RIGHT_HAND and self.rh_cid != -1: self.detach(self.RIGHT_HAND)
-        elif limb_link == self.LEFT_FOOT and self.lf_cid != -1: self.detach(self.LEFT_FOOT)
-        elif limb_link == self.RIGHT_FOOT and self.rf_cid != -1: self.detach(self.RIGHT_FOOT)
+        if limb_link == self.LEFT_HAND and self.lh_cid != -1:
+            self.detach(self.LEFT_HAND)
+        elif limb_link == self.RIGHT_HAND and self.rh_cid != -1:
+            self.detach(self.RIGHT_HAND)
+        elif limb_link == self.LEFT_FOOT and self.lf_cid != -1:
+            self.detach(self.LEFT_FOOT)
+        elif limb_link == self.RIGHT_FOOT and self.rf_cid != -1:
+            self.detach(self.RIGHT_FOOT)
+
+        target_index = self.targets.index(target)
+        if target_index in self.exclude_targets:
+            return
 
         local_pos = [0, 0, 0]
         if attach_pos is not None:
-            local_pos = attach_pos - target.pos
+            direction = np.subtract(attach_pos, target.pos)
+            norm = normalized(direction)
+            offset_eff = attach_pos + np.multiply(norm, -0.04)[0]
+            local_pos = offset_eff - target.pos
+            # print(f"Direction {direction}\nDistance {distance}\nOffset {offset_eff}")
+            # self._p.addUserDebugLine(offset_eff, target.pos, [1, 1, 0])
 
         constraint = self._p.createConstraint(parentBodyUniqueId=self.robot, parentLinkIndex=limb_link.bodyPartIndex,
                                               childBodyUniqueId=target.id, childLinkIndex=-1,
@@ -135,6 +153,7 @@ class Humanoid:
     def set_state(self, state):
         pos = state[0:3]
         ori = state[3:7]
+        stance = state[-4:]
         numJoints = self._p.getNumJoints(self.robot)
         joints = [state[(i * 2) + 7:(i * 2) + 9] for i in range(numJoints)]
 
@@ -142,8 +161,19 @@ class Humanoid:
         for joint in range(numJoints):
             self._p.resetJointState(self.robot, joint, joints[joint][0], joints[joint][1])
 
+        for i, eff in enumerate(self.effectors):
+            if stance[i] == -1: continue
+            target = self.targets[stance[i].astype(int)]
+            self.force_attach(limb_link=eff, target=target, force=1000, attach_pos=eff.current_position())
+
     def initialise_from_state(self):
         upper = len(self.state_file['arr_0'])
         rand = random.randint(0, upper - 1)
         state = self.state_file['arr_0'][rand]
         self.set_state(state)
+
+
+def normalized(a, axis=-1, order=2):
+    l2 = np.atleast_1d(np.linalg.norm(a, order, axis))
+    l2[l2 == 0] = 1
+    return a / np.expand_dims(l2, axis)

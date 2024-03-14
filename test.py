@@ -10,11 +10,13 @@ from pybullet_utils.bullet_client import BulletClient
 
 from humanoid_climb.assets.humanoid import Humanoid
 from pendulum_climb.assets.pendulum import Pendulum
-
+import humanoid_climb.stances as stance
 
 if __name__ == "__main__":
 
 	current_directory = os.getcwd()
+
+	stance.set_root_path(current_directory)
 
 	# Can alternatively pass in p.DIRECT
 	bullet_client = BulletClient(connection_mode=p.GUI)

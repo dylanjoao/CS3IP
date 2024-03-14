@@ -7,7 +7,7 @@ import time
 
 from stable_baselines3 import PPO, SAC
 
-MOTION = [[10, 9, -1, -1], [10, 9, 2, -1]]
+MOTION = [[10, 9, -1, -1], [10, 9, 2, -1], [10, 9, 2, 1]]
 env = gym.make('HumanoidClimb-v0', render_mode='human', max_ep_steps=1600, motion_path=MOTION, state_file=None)
 obs, info = env.reset()
 
@@ -18,8 +18,8 @@ score = 0
 step = 0
 pause = False
 
-MODEL_PATH = ["./models/1_10_9_n_n.zip", "./models/2_10_9_2_n.zip"]
-O_ACTION = [[-1, -1, -1, -1], [1, 1, -1, -1]]
+MODEL_PATH = ["./models/1_10_9_n_n.zip", "./models/2_10_9_2_n.zip", "./models/3_10_9_2_1.zip"]
+O_ACTION = [[-1, -1, -1, -1], [1, 1, -1, -1], [1, 1, 1, -1]]
 MODELS = [PPO.load(MODEL_PATH[i], env=env) for i in range(len(MODEL_PATH))]
 CUR_MODEL = 0
 REWARDS = [0 for i in range(len(MODELS))]
