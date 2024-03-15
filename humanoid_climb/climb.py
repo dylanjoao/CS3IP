@@ -1,3 +1,4 @@
+import os
 import random
 
 import humanoid_climb
@@ -19,9 +20,10 @@ score = 0
 step = 0
 pause = False
 
-MODEL_PATH = ["./models/1_10_9_n_n.zip", "./models/2_10_9_2_n.zip", "./models/3_10_9_2_1.zip", "./models/4_10_13_2_1.zip"]
+ROOT = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = ["/models/1_10_9_n_n.zip", "/models/2_10_9_2_n.zip", "/models/3_10_9_2_1.zip", "/models/4_10_13_2_1.zip"]
 O_ACTION = [[-1, -1, -1, -1], [1, 1, -1, -1], [1, 1, 1, -1], [1, -1, 1, 1]]
-MODELS = [PPO.load(MODEL_PATH[i], env=env) for i in range(len(MODEL_PATH))]
+MODELS = [PPO.load(ROOT+MODEL_PATH[i], env=env) for i in range(len(MODEL_PATH))]
 CUR_MODEL = 0
 REWARDS = [0 for i in range(len(MODELS))]
 STEPS = [0 for i in range(len(MODELS))]

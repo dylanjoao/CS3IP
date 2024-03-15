@@ -7,14 +7,14 @@ import numpy as np
 import time
 import torso_climb
 import humanoid_climb
-
+import humanoid_climb.stances as stances
 from torso_climb.env.torso_climb_env import Reward
 
-NUM_SAMPLES = 50
-INIT_STATE_FILE = "./humanoid_climb/states/state_10_9_2_n.npz"
-MODEL_FILE = "./humanoid_climb/models/3_10_9_2_1.zip"
-O_ACTION = [1, 1, 1, -1]
-STANCE = [10, 9, 2, 1]
+NUM_SAMPLES = 1000
+
+stances.set_root_path("./humanoid_climb")
+STANCE = stances.STANCE_2
+MODEL_FILE = "./humanoid_climb/models/2_10_9_2_n.zip"
 
 
 def get_state(bodyIndex, pid):
@@ -30,41 +30,13 @@ def get_state(bodyIndex, pid):
 	final_state += ori
 	for s in jointStates:
 		final_state += s
-	final_state += STANCE
+	final_state += STANCE.stance
 
 	return np.array(final_state)
 
-
-def set_state(bodyIndex, pid, state):
-	pos = state[0:3]
-	ori = state[3:7]
-	numJoints = p.getNumJoints(bodyIndex, physicsClientId=pid)
-	joints = [state[(i * 2) + 7:(i * 2) + 9] for i in range(numJoints)]
-
-	p.resetBasePositionAndOrientation(bodyIndex, pos, ori, physicsClientId=pid)
-	for joint in range(numJoints):
-		p.resetJointState(bodyIndex, joint, joints[joint][0], joints[joint][1], physicsClientId=pid)
-
-
-env = gym.make("HumanoidClimb-v0", max_ep_steps=600, motion_path=[STANCE], state_file=INIT_STATE_FILE, action_override=O_ACTION)
+env = gym.make("HumanoidClimb-v0", max_ep_steps=600, **STANCE.get_args())
 model = sb.PPO.load(MODEL_FILE, env=env)
 obs = env.reset()[0]
-
-# file = np.load(r"./final_states_1.npz")
-# done = False
-# info = None
-# while True:
-# 	action, _state = model.predict(np.array(obs), deterministic=True)
-# 	obs, reward, done, truncated, info = env.step(action)
-#
-# 	keys = p.getKeyboardEvents()
-# 	if 114 in keys and keys[114] & p.KEY_WAS_TRIGGERED:
-# 		env.reset()
-#
-# 	if 104 in keys and keys[104] & p.KEY_WAS_TRIGGERED:
-# 		rand = random.randint(0, 999)
-# 		state = file['arr_0'][rand]
-# 		set_state(2, 0, state)
 
 start = time.perf_counter()
 saved = 0

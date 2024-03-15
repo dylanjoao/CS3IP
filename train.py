@@ -18,6 +18,7 @@ from typing import List
 
 import wandb
 from wandb.integration.sb3 import WandbCallback
+import humanoid_climb.stances as stances
 
 import pendulum_climb
 import torso_climb
@@ -52,9 +53,9 @@ class CustomCallback(BaseCallback):
 		self.logger.record("climb/rollout_count", self.rollout_count)
 
 
-def make_env(env_id: str, rank: int, seed: int = 0, max_steps: int = 1000, motion_path: List[List[int]] = [[10, 9, -1, -1]], state_file: str = None, action_override: [int] = None) -> gym.Env:
+def make_env(env_id: str, rank: int, seed: int = 0, max_steps: int = 1000, stance: stances.Stance = stances.STANCE_NONE) -> gym.Env:
 	def _init():
-		env = gym.make(env_id, render_mode=None, max_ep_steps=max_steps, motion_path=motion_path, state_file=state_file, action_override=action_override)
+		env = gym.make(env_id, render_mode=None, max_ep_steps=max_steps, **stance.get_args())
 		m_env = Monitor(env)
 		m_env.reset(seed=seed + rank)
 		return m_env
@@ -79,11 +80,12 @@ def train(env_name, sb3_algo, workers, path_to_model=None):
 	)
 
 	max_ep_steps = 600
-	motion_path = [[10, 13, 2, 1]]
-	statefile = "./humanoid_climb/states/state_10_9_2_1_v3.npz"
-	action_override = [1, -1, 1, 1]
-	exclude_target = []
-	vec_env = SubprocVecEnv([make_env(env_name, i, max_steps=max_ep_steps, motion_path=motion_path, state_file=statefile, action_override=action_override) for i in range(workers)], start_method="spawn")
+	# motion_path = [[10, 13, 2, 1]]
+	# statefile = "./humanoid_climb/states/state_10_9_2_1_v3.npz"
+	# action_override = [1, -1, 1, 1]
+	# exclude_target = []
+	stance = stances.STANCE_NONE
+	vec_env = SubprocVecEnv([make_env(env_name, i, max_steps=max_ep_steps, stance=stance) for i in range(workers)], start_method="spawn")
 
 	model = None
 	save_path = f"{model_dir}/{run.id}"
@@ -182,12 +184,11 @@ if __name__ == '__main__':
 
 	if args.test:
 		if os.path.isfile(args.test):
+			stances.set_root_path("./humanoid_climb")
+			stance = stances.STANCE_2
 			max_steps = 600
-			stance = [[10, 13, 2, 1]]
-			statefile = "./humanoid_climb/states/state_10_9_2_1_v3.npz"
-			exclude = [[9]]
-			a_override = [1, -1, 1, 1]
-			env = gym.make(args.gymenv, render_mode='human', motion_path=stance, motion_exclude_targets=exclude, max_ep_steps=max_steps, state_file=statefile, action_override=a_override)
+
+			env = gym.make(args.gymenv, render_mode='human', max_ep_steps=max_steps, **stance.get_args())
 			test(env, args.sb3_algo, path_to_model=args.test)
 		else:
 			print(f'{args.test} not found.')
