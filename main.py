@@ -13,13 +13,13 @@ import humanoid_climb.stances as stances
 
 
 stances.set_root_path("./humanoid_climb")
-stance = stances.STANCE_4
+stance = stances.STANCE_NONE
 
 
 # env = gym.make('TorsoClimb-v0', render_mode='human', max_ep_steps=600, reward=Reward.NEGATIVE_DIST, motion_path=MOTION, state_file=STATEFILE)
 env = gym.make('HumanoidClimb-v0',
                render_mode='human',
-               max_ep_steps=1000,
+               max_ep_steps=10000000,
                **stance.get_args())
 
 ob, info = env.reset(seed=42)
@@ -33,10 +33,10 @@ pause = False
 hold = True
 
 action = [0.0 for i in range(env.action_space.shape[0])]
-# action[-4] = 1
-# action[-3] = 1
-# action[-2] = 1
-# action[-1] = 1
+action[-4] = 1
+action[-3] = 1
+action[-2] = 1
+action[-1] = 1
 
 while True:
 
@@ -47,6 +47,10 @@ while True:
 
     # Reset on backspace
     keys = p.getKeyboardEvents()
+
+    # rarrow
+    if 65296 in keys and keys[65296] & p.KEY_WAS_TRIGGERED:
+        pass
 
     # r
     if 114 in keys and keys[114] & p.KEY_WAS_TRIGGERED:

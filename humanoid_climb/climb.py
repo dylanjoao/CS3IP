@@ -7,8 +7,9 @@ import time
 
 from stable_baselines3 import PPO, SAC
 
-MOTION = [[10, 9, -1, -1], [10, 9, 2, -1], [10, 9, 2, 1]]
-env = gym.make('HumanoidClimb-v0', render_mode='human', max_ep_steps=1600, motion_path=MOTION, state_file=None)
+MOTION = [[10, 9, -1, -1], [10, 9, 2, -1], [10, 9, 2, 1], [10, 13, 2, 1]]
+E_TARGETS = [[], [], [], [9]]
+env = gym.make('HumanoidClimb-v0', render_mode='human', max_ep_steps=3000, motion_path=MOTION, state_file=None, motion_exclude_targets=E_TARGETS)
 obs, info = env.reset()
 
 state = env.reset()
@@ -18,8 +19,8 @@ score = 0
 step = 0
 pause = False
 
-MODEL_PATH = ["./models/1_10_9_n_n.zip", "./models/2_10_9_2_n.zip", "./models/3_10_9_2_1.zip"]
-O_ACTION = [[-1, -1, -1, -1], [1, 1, -1, -1], [1, 1, 1, -1]]
+MODEL_PATH = ["./models/1_10_9_n_n.zip", "./models/2_10_9_2_n.zip", "./models/3_10_9_2_1.zip", "./models/4_10_13_2_1.zip"]
+O_ACTION = [[-1, -1, -1, -1], [1, 1, -1, -1], [1, 1, 1, -1], [1, -1, 1, 1]]
 MODELS = [PPO.load(MODEL_PATH[i], env=env) for i in range(len(MODEL_PATH))]
 CUR_MODEL = 0
 REWARDS = [0 for i in range(len(MODELS))]
@@ -70,7 +71,7 @@ while True:
         print("Paused" if pause else "Unpaused")
 
     if info["is_success"]:
-        print(f"Finished stance {CUR_MODEL} with {REWARDS[CUR_MODEL]} reward in {STEPS[CUR_MODEL]} steps")
+        print(f"Finished stance {CUR_MODEL} with {REWARDS[CUR_MODEL]} ({REWARDS[CUR_MODEL] - 1000}) reward in {STEPS[CUR_MODEL]} steps")
         CUR_MODEL += 1
         if CUR_MODEL > len(MODELS) - 1:
             CUR_MODEL = 0
@@ -81,5 +82,7 @@ while True:
         STEPS = [0 for i in range(len(MODELS))]
         env.reset()
         print("ENV TERMINATED\n")
+
+    time.sleep(1/240)
 
 env.close()

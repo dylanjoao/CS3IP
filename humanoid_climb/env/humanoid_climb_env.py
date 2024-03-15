@@ -106,8 +106,6 @@ class HumanoidClimbEnv(gym.Env):
         ob = self._get_obs()
         info = self._get_info()
 
-        # self.robot.force_attach(self.robot.LEFT_FOOT, self.targets[25], force=1000)
-
         for i, target in enumerate(self.targets):
             colour = [0.0, 0.7, 0.1, 0.75] if i in self.desired_stance else [1.0, 0, 0, 0.75]
             self._p.changeVisualShape(objectUniqueId=target.id, linkIndex=-1, rgbaColor=colour)
@@ -203,8 +201,8 @@ class HumanoidClimbEnv(gym.Env):
             torso_pos = self.robot.robot_body.current_position()
             torso_pos[1] += 0.15
             torso_pos[2] += 0.35
-            self._p.addUserDebugText(text=f"{self.current_stance}", textPosition=torso_pos, textSize=1, lifeTime=1 / 60,
-                                     textColorRGB=[1.0, 0.0, 1.0])
+            # self._p.addUserDebugText(text=f"{self.current_stance}", textPosition=torso_pos, textSize=1, lifeTime=1 / 30,
+            #                          textColorRGB=[1.0, 0.0, 1.0])
 
     def get_stance_for_effector(self, eff_index, eff_cid):
         if eff_cid != -1:
