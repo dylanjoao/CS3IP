@@ -6,11 +6,17 @@ import gymnasium as gym
 import pybullet as p
 import time
 
+import humanoid_climb.stances as stances
 from stable_baselines3 import PPO, SAC
 
-MOTION = [[10, 9, -1, -1], [10, 9, 2, -1], [10, 9, 2, 1], [10, 13, 2, 1]]
-E_TARGETS = [[], [], [], [9]]
-env = gym.make('HumanoidClimb-v0', render_mode='human', max_ep_steps=3000, motion_path=MOTION, state_file=None, motion_exclude_targets=E_TARGETS)
+stances.set_root_path("./")
+STANCES = [stances.STANCE_1, stances.STANCE_2, stances.STANCE_3, stances.STANCE_4, stances.STANCE_5, stances.STANCE_6]
+
+MOTION = [s.stance for s in STANCES]
+EXCLUDE = [s.exclude_targets for s in STANCES]
+O_ACTION = [s.action_override for s in STANCES]
+
+env = gym.make('HumanoidClimb-v0', render_mode='human', max_ep_steps=3000, motion_path=MOTION, state_file=None, motion_exclude_targets=EXCLUDE)
 obs, info = env.reset()
 
 state = env.reset()
@@ -21,8 +27,14 @@ step = 0
 pause = False
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH = ["/models/1_10_9_n_n.zip", "/models/2_10_9_2_n.zip", "/models/3_10_9_2_1.zip", "/models/4_10_13_2_1.zip"]
-O_ACTION = [[-1, -1, -1, -1], [1, 1, -1, -1], [1, 1, 1, -1], [1, -1, 1, 1]]
+MODEL_PATH = ["/models/1_10_9_n_n.zip",
+              "/models/2_10_9_2_n.zip",
+              "/models/3_10_9_2_1.zip",
+              "/models/4_10_13_2_1.zip",
+              "/models/5_10_13_2_5.zip",
+              "/models/6_13_13_n_5.zip",]
+
+
 MODELS = [PPO.load(ROOT+MODEL_PATH[i], env=env) for i in range(len(MODEL_PATH))]
 CUR_MODEL = 0
 REWARDS = [0 for i in range(len(MODELS))]
@@ -60,20 +72,13 @@ while True:
         step = 0
         env.reset()
 
-    # C
-    # if 99 in keys and keys[99] & p.KEY_WAS_TRIGGERED:
-    # 	CUR_MODEL += 1
-    # 	if CUR_MODEL > len(MODELS)-1:
-    # 		CUR_MODEL = 0
-    # 	print(f"Current model {CUR_MODEL}")
-
     # Pause on space
     if 32 in keys and keys[32] & p.KEY_WAS_TRIGGERED:
         pause = not pause
         print("Paused" if pause else "Unpaused")
 
     if info["is_success"]:
-        print(f"Finished stance {CUR_MODEL} with {REWARDS[CUR_MODEL]} ({REWARDS[CUR_MODEL] - 1000}) reward in {STEPS[CUR_MODEL]} steps")
+        print(f"Finished stance {CUR_MODEL+1} with {REWARDS[CUR_MODEL]} ({REWARDS[CUR_MODEL] - 1000}) reward in {STEPS[CUR_MODEL]} steps")
         CUR_MODEL += 1
         if CUR_MODEL > len(MODELS) - 1:
             CUR_MODEL = 0

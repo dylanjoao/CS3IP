@@ -71,7 +71,7 @@ def train(env_name, sb3_algo, workers, path_to_model=None):
 		"env_name": env_name,
 	}
 	run = wandb.init(
-		project="HumanoidClimb-1",
+		project="HumanoidClimb-2",
 		config=config,
 		sync_tensorboard=True,  # auto-upload sb3's tensorboard metrics
 		monitor_gym=False,  # auto-upload the videos of agents playing the game
@@ -80,11 +80,8 @@ def train(env_name, sb3_algo, workers, path_to_model=None):
 	)
 
 	max_ep_steps = 600
-	# motion_path = [[10, 13, 2, 1]]
-	# statefile = "./humanoid_climb/states/state_10_9_2_1_v3.npz"
-	# action_override = [1, -1, 1, 1]
-	# exclude_target = []
-	stance = stances.STANCE_NONE
+	stances.set_root_path("./humanoid_climb")
+	stance = stances.STANCE_6
 	vec_env = SubprocVecEnv([make_env(env_name, i, max_steps=max_ep_steps, stance=stance) for i in range(workers)], start_method="spawn")
 
 	model = None
@@ -185,7 +182,7 @@ if __name__ == '__main__':
 	if args.test:
 		if os.path.isfile(args.test):
 			stances.set_root_path("./humanoid_climb")
-			stance = stances.STANCE_2
+			stance = stances.STANCE_6
 			max_steps = 600
 
 			env = gym.make(args.gymenv, render_mode='human', max_ep_steps=max_steps, **stance.get_args())
