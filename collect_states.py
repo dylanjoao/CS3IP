@@ -13,8 +13,8 @@ from torso_climb.env.torso_climb_env import Reward
 NUM_SAMPLES = 1000
 
 stances.set_root_path("./humanoid_climb")
-STANCE = stances.STANCE_5
-MODEL_FILE = "./humanoid_climb/models/5_10_13_2_5.zip"
+STANCE = stances.STANCE_12
+MODEL_FILE = "./humanoid_climb/models/12_18_17_10_9.zip"
 
 
 def get_state(bodyIndex, pid):

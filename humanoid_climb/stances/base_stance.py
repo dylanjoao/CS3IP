@@ -2,7 +2,7 @@ from typing import List, Union
 
 
 class Stance():
-    def __init__(self, previous_stance: Union[List[int], None], state_file: Union[str, None], stance: List[int], action_override: List[int], exclude_targets: List[int]):
+    def __init__(self, previous_stance: Union[List[int], None], state_file: Union[str, None], stance: List[int], action_override: List[int], exclude_targets: List[List[int]]):
         self.root_path = None
         self.previous_stance = previous_stance
         self.state_file = state_file

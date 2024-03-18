@@ -81,7 +81,7 @@ def train(env_name, sb3_algo, workers, path_to_model=None):
 
 	max_ep_steps = 600
 	stances.set_root_path("./humanoid_climb")
-	stance = stances.STANCE_6
+	stance = stances.STANCE_13
 	vec_env = SubprocVecEnv([make_env(env_name, i, max_steps=max_ep_steps, stance=stance) for i in range(workers)], start_method="spawn")
 
 	model = None
@@ -182,7 +182,7 @@ if __name__ == '__main__':
 	if args.test:
 		if os.path.isfile(args.test):
 			stances.set_root_path("./humanoid_climb")
-			stance = stances.STANCE_6
+			stance = stances.STANCE_13
 			max_steps = 600
 
 			env = gym.make(args.gymenv, render_mode='human', max_ep_steps=max_steps, **stance.get_args())

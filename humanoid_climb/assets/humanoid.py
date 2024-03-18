@@ -103,7 +103,7 @@ class Humanoid:
             self.detach(self.RIGHT_FOOT)
 
         target_index = self.targets.index(target)
-        if target_index in self.exclude_targets:
+        if target_index in self.exclude_targets[self.effectors.index(limb_link)]:
             return
 
         local_pos = [0, 0, 0]

@@ -95,12 +95,12 @@ class HumanoidClimbEnv(gym.Env):
         super().reset(seed=seed)
 
         self.robot.reset()
+        self.robot.exclude_targets = self.motion_exclude_targets[0]
         if self.init_from_state: self.robot.initialise_from_state()
         self.steps = 0
         self.current_stance = [-1, -1, -1, -1]
         self.desired_stance_index = 0
         self.desired_stance = self.motion_path[0]
-        self.robot.exclude_targets = self.motion_exclude_targets[0]
         self.best_dist_to_stance = self.get_distance_from_desired_stance()
 
         ob = self._get_obs()
@@ -183,6 +183,7 @@ class HumanoidClimbEnv(gym.Env):
                                           rgbaColor=[1.0, 0.0, 0.0, 0.75])
             self.desired_stance = new_stance
             for i, v in enumerate(self.desired_stance):
+                if v == -1: continue
                 self._p.changeVisualShape(objectUniqueId=self.targets[v].id, linkIndex=-1,
                                           rgbaColor=[0.0, 0.7, 0.1, 0.75])
 
