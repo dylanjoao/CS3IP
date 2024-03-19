@@ -1,28 +1,34 @@
 import os
 from time import sleep
+from typing import Optional
 
 import gymnasium as gym
 import numpy as np
 import math
 import pybullet as p
 import pybullet_data
+from pybullet_utils.bullet_client import BulletClient
 
 from pendulum_climb.assets.pendulum import Pendulum
 from pendulum_climb.assets.target import Target
 
 
 class PendulumClimbEnv(gym.Env):
-    metadata = {'render.modes': ['human']}
+    metadata = {'render_modes': ['human']}
 
-    def __init__(self):
+    def __init__(self, render_mode: Optional[str] = None):
 
-        self.client = p.connect(p.GUI)
+        self.render_mode = render_mode
+        if self.render_mode == 'human':
+            self._p = BulletClient(p.GUI)
+        else:
+            self._p = BulletClient(p.DIRECT)
 
         # +vel, -vel, grasp, release
         self.action_space = gym.spaces.Discrete(8)
 
         # Holds[2], Position[3], Angle[3], Velocity[3], Distance[1]
-        self.observation_space = gym.spaces.Box(low=-float('inf'), high=float('inf'), shape=(12,), dtype=np.float32)
+        self.observation_space = gym.spaces.Box(low=-float('inf'), high=float('inf'), shape=(13,), dtype=np.float32)
 
         self.np_random, _ = gym.utils.seeding.np_random()
 
@@ -37,18 +43,31 @@ class PendulumClimbEnv(gym.Env):
         self._elapsed_steps = 0
 
         # configure pybullet GUI
-        p.setAdditionalSearchPath(pybullet_data.getDataPath())
-        p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
-        p.resetDebugVisualizerCamera(cameraDistance=10, cameraYaw=90, cameraPitch=0, cameraTargetPosition=[0, 0, 5])
-        p.setTimeStep(1 / 30, self.client)
+        self._p.setAdditionalSearchPath(pybullet_data.getDataPath())
+        self._p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
+        self._p.resetDebugVisualizerCamera(cameraDistance=10, cameraYaw=90, cameraPitch=0,
+                                           cameraTargetPosition=[0, 0, 5])
+        self._p.setGravity(0, 0, -9.8)
+
+        # Reload the plane and car
+        plane = self._p.loadURDF("plane.urdf")
+        self.pendulum = Pendulum(self._p, [0, 0, 2.5])
+
+        # Targets equally apart
+        dist = 1.0
+        for i in range(10):
+            target = Target(self._p, [0, 0, i + 1 * 2 + dist])
+            self.targets.append(target)
 
     def _get_obs(self):
-        pen_ob = self.pendulum.get_observation()
-        agent_position = pen_ob[2:5]
-        self.pendulum_pos = agent_position
-        self.current_distance = np.linalg.norm(np.array(agent_position) - np.array(self.goal))
+        holds, pos, ang, vel, eff1, eff2 = self.pendulum.get_observation()
+        self.pendulum_pos = pos
+        self.current_distance = np.linalg.norm(np.array(pos) - np.array(self.goal))
 
-        return np.concatenate((pen_ob, [self.current_distance]), dtype=np.float32)
+        eff1_dist = np.linalg.norm(np.array(eff1) - np.array(self.goal))
+        eff2_dist = np.linalg.norm(np.array(eff2) - np.array(self.goal))
+
+        return np.concatenate((holds, pos, ang, vel, (eff1_dist, eff2_dist)), dtype=np.float32)
 
     def _get_info(self):
         return {"distance:": np.linalg.norm(np.array(self.pendulum_pos) - np.array(self.goal))}
@@ -57,7 +76,7 @@ class PendulumClimbEnv(gym.Env):
         # Feed action to the pendulum and get observation of pendulum's state
         self.pendulum.apply_action(action)
 
-        p.stepSimulation()
+        self._p.stepSimulation()
 
         # Gather information about the env
         ob = self._get_obs()
@@ -93,42 +112,25 @@ class PendulumClimbEnv(gym.Env):
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
 
-        p.resetSimulation(self.client)
-        p.setGravity(0, 0, -10)
-
-        # Reload the plane and car
-        plane = p.loadURDF("plane.urdf")
-        self.pendulum = Pendulum(self.client, [0, 0, 2.5])
-        self.targets.clear()
-
-        # Targets equally apart
-        dist = 1.0
-        for i in range(10):
-            target = Target(self.client, [0, 0, i + 1 * 2 + dist])
-            self.targets.append(target)
-
-        initial_constraint = p.createConstraint(parentBodyUniqueId=self.pendulum.id,
-                                                parentLinkIndex=0,
-                                                childBodyUniqueId=self.targets[0].id,
-                                                childLinkIndex=-1,
-                                                jointType=p.JOINT_POINT2POINT,
-                                                jointAxis=[0, 0, 0],
-                                                parentFramePosition=[0, 0, 0],
-                                                childFramePosition=[0, 0, 0])
-        self.pendulum.top_held = self.targets[0]
+        self.pendulum.reset_state()
+        initial_constraint = self._p.createConstraint(parentBodyUniqueId=self.pendulum.id,
+                                                      parentLinkIndex=0,
+                                                      childBodyUniqueId=self.targets[0].id,
+                                                      childLinkIndex=-1,
+                                                      jointType=p.JOINT_POINT2POINT,
+                                                      jointAxis=[0, 0, 0],
+                                                      parentFramePosition=[0, 0, 0],
+                                                      childFramePosition=[0, 0, 0])
         self.pendulum.targets = self.targets
         self.pendulum.top_held = initial_constraint
-        self.targets[0].constraint = initial_constraint
 
-        goal_pos, _ = p.getBasePositionAndOrientation(self.targets[-1].id, self.client)
-        self.goal = goal_pos
+        self.goal = self.targets[-1].pos
 
         # Get observation to return
         ob = self._get_obs()
-        agent_position = ob[2:5]
 
-        self.pendulum_pos = agent_position
-        self.initial_dist = np.linalg.norm(np.array(agent_position) - np.array(goal_pos))
+        self.pendulum_pos = self._p.getBasePositionAndOrientation(self.pendulum.id)[0]
+        self.initial_dist = np.linalg.norm(np.array(self.pendulum_pos) - np.array(self.goal))
         self.current_distance = self.initial_dist
         self.prev_dist = self.current_distance
         self._elapsed_steps = 0
@@ -139,7 +141,6 @@ class PendulumClimbEnv(gym.Env):
 
     def render(self, mode='human'):
         pass
-        # self.client = p.connect(p.DIRECT)
 
     def close(self):
-        p.disconnect(self.client)
+        self._p.disconnect()

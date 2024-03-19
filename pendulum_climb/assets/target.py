@@ -3,9 +3,8 @@ import os
 
 
 class Target:
-    def __init__(self, client, base):
+    def __init__(self, client, pos):
         f_name = os.path.join(os.path.dirname(__file__), 'target.urdf')
-        self.id = p.loadURDF(fileName=f_name,
-                             basePosition=base,
-                             physicsClientId=client)
-        self.constraint = None
+        self._p = client
+        self.id = self._p.loadURDF(fileName=f_name, basePosition=pos)
+        self.pos = pos
