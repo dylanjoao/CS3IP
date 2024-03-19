@@ -99,6 +99,24 @@ STANCE_13 = Stance(stance=[18, 22, -1, -1],
                    action_override=[1, -1, -1, -1],
                    exclude_targets=[[], [17, 21, 13, 9, 12, 10], [], [9, 6]])
 
+STANCE_13_2 = Stance(stance=[18, 20, 10, 9],
+                     previous_stance=[18, 17, 10, 9],
+                     state_file="/states/state_18_17_10_9.npz",
+                     action_override=[1, -1, 1, 1],
+                     exclude_targets=[[], [17, 12, 13, 14], [], []])
+
+STANCE_14 = Stance(stance=[20, 20, 10, -1],
+                   previous_stance=[18, 20, 10, 9],
+                   state_file="/states/state_18_20_10_9.npz",
+                   action_override=[-1, 1, 1, -1],
+                   exclude_targets=[[18, 14, 19], [], [], []])
+
+STANCE_14_1 = Stance(stance=[20, 20, 10, 13],
+                     previous_stance=[18, 20, 10, 9],
+                     state_file="/states/state_18_20_10_9.npz",
+                     action_override=[-1, 1, 1, -1],
+                     exclude_targets=[[18, 14, 19], [], [], [9]])
+
 _STANCES_.append(STANCE_NONE)
 _STANCES_.append(STANCE_1)
 _STANCES_.append(STANCE_2)
@@ -115,6 +133,9 @@ _STANCES_.append(STANCE_11_2)
 _STANCES_.append(STANCE_11_3)
 _STANCES_.append(STANCE_12)
 _STANCES_.append(STANCE_13)
+_STANCES_.append(STANCE_13_2)
+_STANCES_.append(STANCE_14)
+_STANCES_.append(STANCE_14_1)
 
 
 def set_root_path(root_path):

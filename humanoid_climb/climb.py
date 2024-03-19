@@ -11,7 +11,8 @@ from stable_baselines3 import PPO, SAC
 
 stances.set_root_path("./")
 STANCES = [stances.STANCE_1, stances.STANCE_2, stances.STANCE_3, stances.STANCE_4, stances.STANCE_5, stances.STANCE_6,
-           stances.STANCE_7, stances.STANCE_8, stances.STANCE_9, stances.STANCE_10, stances.STANCE_11_3, stances.STANCE_12]
+           stances.STANCE_7, stances.STANCE_8, stances.STANCE_9, stances.STANCE_10, stances.STANCE_11_3, stances.STANCE_12,
+           stances.STANCE_13_2, stances.STANCE_14]
 
 MOTION = [s.stance for s in STANCES]
 EXCLUDE = [s.exclude_targets for s in STANCES]
@@ -40,7 +41,9 @@ MODEL_PATH = ["/models/1_10_9_n_n.zip",
               "/models/9_14_17_6_5.zip",
               "/models/10_14_17_n_9.zip",
               "/models/11_14_17_10_9.zip",
-              "/models/12_18_17_10_9.zip"]
+              "/models/12_18_17_10_9.zip",
+              "/models/13_18_20_10_9.zip",
+              "/models/14_20_20_10_9.zip"]
 
 
 MODELS = [PPO.load(ROOT+MODEL_PATH[i], env=env) for i in range(len(MODEL_PATH))]

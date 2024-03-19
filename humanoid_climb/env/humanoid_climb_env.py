@@ -52,11 +52,11 @@ class HumanoidClimbEnv(gym.Env):
         self._p.setPhysicsEngineParameter(fixedTimeStep=1.0 / 240., numSubSteps=10)
 
         self.floor = self._p.loadURDF("plane.urdf")
-        self.wall = Wall(self._p, pos=[0.48, 0, 2.5]).id
+        self.wall = Wall(self._p, pos=[0.48, 0, 2]).id
         self.robot = Humanoid(self._p, [0, 0, 1.175], [0, 0, 0, 1], 0.48, statefile=self.state_file)
 
         self.targets = []
-        for i in range(1, 8):  # Vertical
+        for i in range(1, 6):  # Vertical
             h_offset = -1.5
             h_spacing = 0.6
             for j in range(1, 5):  # Horizontal
@@ -68,6 +68,9 @@ class HumanoidClimbEnv(gym.Env):
                 self._p.addUserDebugText(text=f"{len(self.targets) - 1}", textPosition=position, textSize=0.7,
                                          lifeTime=0.0,
                                          textColorRGB=[0.0, 0.0, 1.0])
+
+        self.targets.append(Target(self._p, pos=[0.4, 0, 3.5]))
+        self._p.addUserDebugText(text=f"{len(self.targets) - 1}", textPosition=[0.4, 0, 3.55], textSize=0.7, lifeTime=0.0, textColorRGB=[0.0, 0.0, 1.0])
 
         self.robot.set_targets(self.targets)
 
