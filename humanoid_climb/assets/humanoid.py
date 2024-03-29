@@ -17,10 +17,11 @@ class Humanoid:
         self._p = bullet_client
         self.power = power
 
-        self.robot = bullet_client.loadMJCF(f_name)[0]
+        flags = p.URDF_USE_SELF_COLLISION
+        self.robot = bullet_client.loadMJCF(f_name, flags=flags)[0]
         bullet_client.resetBasePositionAndOrientation(self.robot, pos, ori)
         if fixedBase:
-            bullet_client.createConstraint(self.robot, -1, -1, -1, p.JOINT_FIXED, [0, 0, 0], [0, 0, 0, 1], pos)
+            self.base_constraint = bullet_client.createConstraint(self.robot, -1, -1, -1, p.JOINT_FIXED, [0, 0, 0], [0, 0, 0, 1], pos)
 
         if statefile is not None:
             self.state_file = np.load(statefile)
@@ -50,6 +51,46 @@ class Humanoid:
         self.rh_cid = -1
         self.lf_cid = -1
         self.rf_cid = -1
+
+        chest_group = 1
+        waist_group = 2
+        left_leg_group = 4
+        left_arm_group = 8
+        right_leg_group = 16
+        right_arm_group = 32
+
+        waist_mask = 0x0
+        left_leg_mask = right_leg_group | left_arm_group | right_arm_group
+        left_arm_mask = left_leg_group | right_leg_group | right_arm_group | waist_group
+        right_leg_mask = left_leg_group | left_arm_group | right_arm_group
+        right_arm_mask = left_leg_group | right_leg_group | left_arm_group | waist_group
+
+        col_groups = {"lwaist": [waist_group, waist_mask],
+                      "pelvis": [waist_group, waist_mask],
+
+                      "right_thigh": [right_leg_group, right_leg_mask],
+                      "right_shin": [right_leg_group, right_leg_mask],
+                      "right_foot": [right_leg_group, right_leg_mask],
+
+                      "left_thigh": [left_leg_group, left_leg_mask],
+                      "left_shin": [left_leg_group, left_leg_mask],
+                      "left_foot": [left_leg_group, left_leg_mask],
+
+                      "right_upper_arm": [right_arm_group, right_arm_mask],
+                      "right_lower_arm": [right_arm_group, right_arm_mask],
+                      "right_hand": [right_arm_group, right_arm_mask],
+
+                      "left_upper_arm": [left_arm_group, left_arm_mask],
+                      "left_lower_arm": [left_arm_group, left_arm_mask],
+                      "left_hand": [left_arm_group, left_arm_mask]
+                      }
+
+        for geom in self.parts:
+            self._p.changeVisualShape(self.robot, self.parts[geom].bodyPartIndex, rgbaColor=[0, 0, 1, 1])
+            if geom in col_groups:
+                self._p.setCollisionFilterGroupMask(self.robot, self.parts[geom].bodyPartIndex, col_groups[geom][0],
+                                               col_groups[geom][1])
+                # print(f"{geom} set to group {col_groups[geom][0]} & mask {col_groups[geom][1]}")
 
         self.targets = None
 
@@ -87,10 +128,20 @@ class Humanoid:
 
         eff_pos = effector.current_position()
         for target in self.targets:
-            dist = np.linalg.norm(np.array(eff_pos) - np.array(target.pos))
-            if dist < 0.1:
-                self.force_attach(limb_link=effector, target=target, force=1000, attach_pos=eff_pos)
+
+            cp = self._p.getClosestPoints(target.id, self.robot, 1.0, -1, effector.bodyPartIndex)
+            if len(cp) < 1:
+                continue
+            contact_distance = cp[0][8]
+
+            if contact_distance < 0.0:
+                self.force_attach(limb_link=effector, target=target, force=5000, attach_pos=eff_pos)
                 break
+
+            # dist = np.linalg.norm(np.array(eff_pos) - np.array(target.pos))
+            # if dist < 0.1:
+            #     self.force_attach(limb_link=effector, target=target, force=1000, attach_pos=eff_pos)
+            #     break
 
     def force_attach(self, limb_link, target, force=-1, attach_pos=None):
         if limb_link == self.LEFT_HAND and self.lh_cid != -1:
@@ -103,22 +154,17 @@ class Humanoid:
             self.detach(self.RIGHT_FOOT)
 
         target_index = self.targets.index(target)
-        if target_index in self.exclude_targets[self.effectors.index(limb_link)]:
-            return
+        if len(self.exclude_targets) > 0:
+            if target_index in self.exclude_targets[self.effectors.index(limb_link)]:
+                return
 
-        local_pos = [0, 0, 0]
-        if attach_pos is not None:
-            direction = np.subtract(attach_pos, target.pos)
-            norm = normalized(direction)
-            offset_eff = attach_pos + np.multiply(norm, -0.04)[0]
-            local_pos = offset_eff - target.pos
-            # print(f"Direction {direction}\nDistance {distance}\nOffset {offset_eff}")
-            # self._p.addUserDebugLine(offset_eff, target.pos, [1, 1, 0])
+        if attach_pos is None:
+            attach_pos = [0, 0, 0]
 
         constraint = self._p.createConstraint(parentBodyUniqueId=self.robot, parentLinkIndex=limb_link.bodyPartIndex,
                                               childBodyUniqueId=target.id, childLinkIndex=-1,
                                               jointType=p.JOINT_POINT2POINT, jointAxis=[0, 0, 0],
-                                              parentFramePosition=[0, 0, 0], childFramePosition=local_pos)
+                                              parentFramePosition=[0, 0, 0], childFramePosition=np.subtract(attach_pos, target.pos))
         self._p.changeConstraint(userConstraintUniqueId=constraint, maxForce=force)
 
         if limb_link == self.LEFT_HAND: self.lh_cid = constraint

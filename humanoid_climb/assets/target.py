@@ -7,3 +7,4 @@ class Target:
         f_name = os.path.join(os.path.dirname(__file__), 'target.xml')
         self.pos = pos
         self.id = client.loadURDF(fileName=f_name, basePosition=pos)
+        client.setCollisionFilterGroupMask(self.id, -1, 0, 0)

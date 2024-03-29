@@ -55,6 +55,8 @@ class HumanoidClimbEnv(gym.Env):
         self.wall = Wall(self._p, pos=[0.48, 0, 2]).id
         self.robot = Humanoid(self._p, [0, 0, 1.175], [0, 0, 0, 1], 0.48, statefile=self.state_file)
 
+        self.debug_stance_text = self._p.addUserDebugText(text=f"", textPosition=[0, 0, 0], textSize=1, lifeTime=0.1, textColorRGB=[1.0, 0.0, 1.0])
+
         self.targets = []
         for i in range(1, 6):  # Vertical
             h_offset = -1.5
@@ -205,8 +207,9 @@ class HumanoidClimbEnv(gym.Env):
             torso_pos = self.robot.robot_body.current_position()
             torso_pos[1] += 0.15
             torso_pos[2] += 0.35
-            # self._p.addUserDebugText(text=f"{self.current_stance}", textPosition=torso_pos, textSize=1, lifeTime=1 / 30,
-            #                          textColorRGB=[1.0, 0.0, 1.0])
+            self.debug_stance_text = self._p.addUserDebugText(text=f"{self.current_stance}", textPosition=torso_pos,
+                                                              textSize=1, lifeTime=0.1, textColorRGB=[1.0, 0.0, 1.0],
+                                                              replaceItemUniqueId=self.debug_stance_text)
 
     def get_stance_for_effector(self, eff_index, eff_cid):
         if eff_cid != -1:
