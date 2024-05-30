@@ -156,6 +156,8 @@ def test(env, sb3_algo, path_to_model):
 			step = 0
 			env.reset()
 
+		time.sleep(0.1)
+
 	env.close()
 
 
@@ -185,7 +187,8 @@ if __name__ == '__main__':
 			stance = stances.STANCE_14_1
 			max_steps = 600
 
-			env = gym.make(args.gymenv, render_mode='human', max_ep_steps=max_steps, **stance.get_args())
+			# env = gym.make(args.gymenv, render_mode='human', max_ep_steps=max_steps, **stance.get_args())
+			env = gym.make(args.gymenv)
 			test(env, args.sb3_algo, path_to_model=args.test)
 		else:
 			print(f'{args.test} not found.')

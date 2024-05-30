@@ -245,7 +245,7 @@ class TorsoClimbEnv(gym.Env):
 		if is_closer: self.best_dist_to_stance = current_dist_away.copy()
 
 		reward = -1 * np.sum(current_dist_away)
-		reward += 500 if self.current_stance == self.desired_stance else 0
+		# reward += 500 if self.current_stance == self.desired_stance else 0
 		self.visualise_reward(reward, -1, 0)
 
 		return reward

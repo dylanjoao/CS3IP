@@ -112,6 +112,6 @@ while True:
 
         print(f"ENV TERMINATED SUCCESS RATE {successful_attempts/climb_attempts*100} %\n")
 
-    time.sleep(1/240)
+    # time.sleep(1/240)
 
 env.close()

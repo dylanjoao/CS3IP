@@ -1,4 +1,5 @@
 import os
+import time
 from time import sleep
 
 import gymnasium as gym
@@ -14,9 +15,13 @@ from pendulum_climb.assets.target import Target
 class PendulumClimbEnv(gym.Env):
     metadata = {'render.modes': ['human']}
 
-    def __init__(self):
+    def __init__(self, render_mode=None):
+        self.render_mode = render_mode
 
-        self.client = p.connect(p.GUI)
+        if render_mode == "human":
+            self.client = p.connect(p.GUI)
+        else:
+            self.client = p.connect(p.DIRECT)
 
         # +vel, -vel, grasp, release
         self.action_space = gym.spaces.Discrete(8)
@@ -51,7 +56,7 @@ class PendulumClimbEnv(gym.Env):
         return np.concatenate((pen_ob, [self.current_distance]), dtype=np.float32)
 
     def _get_info(self):
-        return {"distance:": np.linalg.norm(np.array(self.pendulum_pos) - np.array(self.goal))}
+        return {"distance": np.linalg.norm(np.array(self.pendulum_pos) - np.array(self.goal))}
 
     def step(self, action):
         # Feed action to the pendulum and get observation of pendulum's state
@@ -84,6 +89,10 @@ class PendulumClimbEnv(gym.Env):
 
         self.prev_dist = self.current_distance
 
+        if self.render_mode == "human":
+            p.resetDebugVisualizerCamera(cameraDistance=6, cameraYaw=90, cameraPitch=0, cameraTargetPosition=[0, 0, self.pendulum_pos[2]])
+            time.sleep(1/240)
+
         return ob, reward, terminated, truncated, info
 
     def seed(self, seed=None):
@@ -103,7 +112,7 @@ class PendulumClimbEnv(gym.Env):
 
         # Targets equally apart
         dist = 1.0
-        for i in range(10):
+        for i in range(50):
             target = Target(self.client, [0, 0, i + 1 * 2 + dist])
             self.targets.append(target)
 

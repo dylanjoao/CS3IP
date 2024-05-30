@@ -92,6 +92,9 @@ class HumanoidClimbEnv(gym.Env):
         terminated = self.terminate_check()
         truncated = self.truncate_check()
 
+        self._p.resetDebugVisualizerCamera(cameraDistance=3, cameraYaw=-90, cameraPitch=0,
+                                           cameraTargetPosition=[0, 0, 2])
+
         return ob, reward, terminated, truncated, info
 
     def reset(self, seed=None, options=None):
@@ -122,7 +125,7 @@ class HumanoidClimbEnv(gym.Env):
         if is_closer: self.best_dist_to_stance = current_dist_away.copy()
 
         reward = np.clip(-1 * np.sum(current_dist_away), -2, float('inf'))
-        reward += 1000 if self.current_stance == self.desired_stance else 0
+        # reward += 1000 if self.current_stance == self.desired_stance else 0
         if self.is_on_floor():
             reward += (self.max_ep_steps - self.steps) * -2
 

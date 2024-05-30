@@ -13,7 +13,7 @@ import humanoid_climb.stances as stances
 
 
 stances.set_root_path("./humanoid_climb")
-stance = stances.STANCE_14_1
+stance = stances.STANCE_NONE
 
 
 # env = gym.make('TorsoClimb-v0', render_mode='human', max_ep_steps=600, reward=Reward.NEGATIVE_DIST, motion_path=MOTION, state_file=STATEFILE)
@@ -67,7 +67,7 @@ while True:
         pause = not pause
         print("Paused" if pause else "Unpaused")
 
-    if done or truncated:
-        pause = True
+    # if done or truncated:
+    #     pause = True
 
 env.close()
