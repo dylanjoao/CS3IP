@@ -1,9 +1,12 @@
 import os
+from pprint import pprint
+
 import gymnasium as gym
 import numpy as np
 import math
 import pybullet as p
 import pybullet_data
+import json
 
 from typing import Optional, List
 from pybullet_utils.bullet_client import BulletClient
@@ -51,8 +54,14 @@ class HumanoidClimbEnv(gym.Env):
         self._p.setGravity(0, 0, -9.8)
         self._p.setPhysicsEngineParameter(fixedTimeStep=1.0 / 240., numSubSteps=10)
 
+        with open("E:\\Programs\\GymRL\\PyBullet\\CS3IP\\CS3IP\\config.json") as f:
+            d = json.load(f)
+
+        pprint(d)
+
         self.floor = self._p.loadURDF("plane.urdf")
-        self.wall = Wall(self._p, pos=[0.48, 0, 2]).id
+        # self.wall = Wall(self._p, pos=[0.48, 0, 2], ori=[0,0,0,1], filename="").id
+        self.wall = Wall(self._p, pos=d["climbing_surface"]["position"], ori=d["climbing_surface"]["orientation"], filename=d["climbing_surface"]["path"]).id
         self.robot = Humanoid(self._p, [0, 0, 1.175], [0, 0, 0, 1], 0.48, statefile=self.state_file)
 
         self.debug_stance_text = self._p.addUserDebugText(text=f"", textPosition=[0, 0, 0], textSize=1, lifeTime=0.1, textColorRGB=[1.0, 0.0, 1.0])
@@ -73,6 +82,10 @@ class HumanoidClimbEnv(gym.Env):
 
         self.targets.append(Target(self._p, pos=[0.4, 0, 3.5]))
         self._p.addUserDebugText(text=f"{len(self.targets) - 1}", textPosition=[0.4, 0, 3.55], textSize=0.7, lifeTime=0.0, textColorRGB=[0.0, 0.0, 1.0])
+
+
+        for h in d["holds"]:
+            Target(self._p, pos=d["holds"][h]["position"], ori=d["holds"][h]["orientation"], path=d["holds"][h]["path"])
 
         self.robot.set_targets(self.targets)
 

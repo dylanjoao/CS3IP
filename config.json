@@ -1,0 +1,19 @@
+{
+  "climbing_surface": {
+    "path": "E:\\Programs\\GymRL\\PyBullet\\CS3IP\\CS3IP\\humanoid_climb\\assets\\wall.xml",
+    "position": [0.48, 0, 2],
+    "orientation": [0, 0, 0, 1]
+  },
+  "holds": {
+    "hold_0": {
+      "path": "E:\\Programs\\GymRL\\PyBullet\\CS3IP\\CS3IP\\humanoid_climb\\assets\\target.xml",
+      "position": [0.48, 0, 7],
+      "orientation": [0, 0, 0, 1]
+    },
+    "hold_1": {
+      "path": "E:\\Programs\\GymRL\\PyBullet\\CS3IP\\CS3IP\\humanoid_climb\\assets\\target.xml",
+      "position": [0.48, 0, 5],
+      "orientation": [0, 0, 0, 1]
+    }
+  }
+}

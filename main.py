@@ -2,10 +2,7 @@ import os
 import random
 
 import gymnasium as gym
-import pendulum_climb
-import torso_climb
 import humanoid_climb
-from torso_climb.env.torso_climb_env import Reward
 import pybullet as p
 import time
 from stable_baselines3 import PPO, SAC
@@ -16,7 +13,6 @@ stances.set_root_path("./humanoid_climb")
 stance = stances.STANCE_3
 
 
-# env = gym.make('TorsoClimb-v0', render_mode='human', max_ep_steps=600, reward=Reward.NEGATIVE_DIST, motion_path=MOTION, state_file=STATEFILE)
 env = gym.make('HumanoidClimb-v0',
                render_mode='human',
                max_ep_steps=10000000,
