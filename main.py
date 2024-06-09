@@ -16,7 +16,7 @@ stance = stances.STANCE_3
 env = gym.make('HumanoidClimb-v0',
                render_mode='human',
                max_ep_steps=10000000,
-               **stance.get_args())
+               config_path="./config.json")
 
 ob, info = env.reset(seed=42)
 

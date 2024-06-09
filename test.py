@@ -9,7 +9,6 @@ import os
 from pybullet_utils.bullet_client import BulletClient
 
 from humanoid_climb.assets.humanoid import Humanoid
-from pendulum_climb.assets.pendulum import Pendulum
 import humanoid_climb.stances as stance
 
 if __name__ == "__main__":
@@ -29,6 +28,7 @@ if __name__ == "__main__":
 	# flags = p.URDF_USE_SELF_COLLISION | p.URDF_USE_SELF_COLLISION_EXCLUDE_ALL_PARENTS | p.URDF_GOOGLEY_UNDEFINED_COLORS
 	flags = p.URDF_GOOGLEY_UNDEFINED_COLORS
 	plane = bullet_client.loadURDF("plane.urdf")
+	lego = bullet_client.loadURDF("duck_vhacd.urdf")
 
 	humanoid = Humanoid(bullet_client, [0, 0, 2], [0, 0, 0, 1], 0.48, None, True)
 	params = [bullet_client.addUserDebugParameter(motor.joint_name, -1, +1) for motor in humanoid.motors]

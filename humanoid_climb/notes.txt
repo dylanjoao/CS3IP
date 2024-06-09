@@ -1,0 +1,16 @@
+MultiDOF joints untested, unlikely to work
+
+Hold distance is measured from both the centre of the effector and hold model (possible unwanted side effects for objs) -> visualise this
+
+starting_pose values are angles in radians
+
+Use joint_test.py to find information about joint names
+
+We only implement urdf & mjcf types for the config
+
+Stances should match the size of end-effectors defined
+
+Grasping actions are the last x elements, where x is the number of end-effectors
+
+Actions are normalised to from -1 to 1
+To attach the action must be >0

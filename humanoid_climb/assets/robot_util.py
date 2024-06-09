@@ -185,6 +185,7 @@ def addToScene(bullet_client, bodies):
 			robot_name = robot_name.decode("utf8")
 			part_name = part_name.decode("utf8")
 			parts[part_name] = BodyPart(_p, part_name, bodies, i, -1)
+
 		for j in range(_p.getNumJoints(bodies[i])):
 			_p.setJointMotorControl2(
 				bodies[i], j, p.POSITION_CONTROL, positionGain=0.1, velocityGain=0.1, force=0
@@ -208,10 +209,6 @@ def addToScene(bullet_client, bodies):
 			if part_name == robot_name:
 				robot_body = parts[part_name]
 
-			if i == 0 and j == 0 and robot_body is None:  # if nothing else works, we take this as robot_body
-				parts[robot_name] = BodyPart(_p, robot_name, bodies, 0, -1)
-				robot_body = parts[robot_name]
-
 			if joint_name[:6] == "ignore":
 				Joint(_p, joint_name, bodies, i, j).disable_motor()
 				continue
@@ -221,5 +218,9 @@ def addToScene(bullet_client, bodies):
 				ordered_joints.append(joints[joint_name])
 
 				joints[joint_name].power_coef = 100.0
+
+		if len(bodies) == 1 and robot_body is None:  # if nothing else works, we take this as robot_body
+			parts[robot_name] = BodyPart(_p, robot_name, bodies, 0, -1)
+			robot_body = parts[robot_name]
 
 	return parts, joints, ordered_joints, robot_body

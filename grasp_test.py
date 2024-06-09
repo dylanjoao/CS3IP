@@ -4,8 +4,6 @@ import pybullet as p
 from pybullet_utils import bullet_client
 
 from humanoid_climb.assets.humanoid import Humanoid
-from humanoid_climb.assets.target import Target
-from torso_climb.assets.torso import Torso
 
 
 def draw_x(client, position, size=0.05, color=[1, 0, 0]):
