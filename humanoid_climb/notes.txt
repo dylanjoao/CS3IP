@@ -14,3 +14,7 @@ Grasping actions are the last x elements, where x is the number of end-effectors
 
 Actions are normalised to from -1 to 1
 To attach the action must be >0
+
+The order of the stances is the order the motion path will be set
+
+The names of the holds and stances in the config do not matter

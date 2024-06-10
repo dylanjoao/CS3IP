@@ -9,6 +9,8 @@ import time
 import humanoid_climb.stances as stances
 from stable_baselines3 import PPO, SAC
 
+from humanoid_climb.env.climbing_config import ClimbingConfig
+
 stances.set_root_path("./")
 STANCES = [stances.STANCE_1, stances.STANCE_2, stances.STANCE_3, stances.STANCE_4, stances.STANCE_5, stances.STANCE_6,
            stances.STANCE_7, stances.STANCE_8, stances.STANCE_9, stances.STANCE_10, stances.STANCE_11_3, stances.STANCE_12,
@@ -18,7 +20,9 @@ MOTION = [s.stance for s in STANCES]
 EXCLUDE = [s.exclude_targets for s in STANCES]
 O_ACTION = [s.action_override for s in STANCES]
 
-env = gym.make('HumanoidClimb-v0', render_mode='human', max_ep_steps=50000, motion_path=MOTION, state_file=None, motion_exclude_targets=EXCLUDE)
+
+config = ClimbingConfig("./config.json")
+env = gym.make('HumanoidClimb-v0', render_mode='human', max_ep_steps=50000, config=config)
 obs, info = env.reset()
 
 state = env.reset()

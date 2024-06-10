@@ -18,9 +18,9 @@ from humanoid_climb.assets.asset import Asset
 class HumanoidClimbEnv(gym.Env):
     metadata = {'render_modes': ['human', 'rgb_array'], 'render_fps': 60}
 
-    def __init__(self, config_path, render_mode: Optional[str] = None, max_ep_steps: Optional[int] = 602, state_file: Optional[str] = None):
+    def __init__(self, config, render_mode: Optional[str] = None, max_ep_steps: Optional[int] = 602, state_file: Optional[str] = None):
 
-        self.config = ClimbingConfig(config_path)
+        self.config = config
 
         self.render_mode = render_mode
         self.max_ep_steps = max_ep_steps
@@ -177,13 +177,17 @@ class HumanoidClimbEnv(gym.Env):
             new_stance = self.motion_path[self.desired_stance_index]
             self.climber.exclude_targets = self.motion_exclude_targets[self.desired_stance_index]
 
-            for i, v in enumerate(self.desired_stance):
-                self._p.changeVisualShape(objectUniqueId=self.targets[v].id, linkIndex=-1,
+            # Reset current desired target colours to red
+            for key in self.desired_stance:
+                if key == -1: continue
+                self._p.changeVisualShape(objectUniqueId=self.targets[key].id, linkIndex=-1,
                                           rgbaColor=[1.0, 0.0, 0.0, 0.75])
             self.desired_stance = new_stance
-            for i, v in enumerate(self.desired_stance):
-                if v == -1: continue
-                self._p.changeVisualShape(objectUniqueId=self.targets[v].id, linkIndex=-1,
+
+            # Set new desired targets to green
+            for key in self.desired_stance:
+                if key == -1: continue
+                self._p.changeVisualShape(objectUniqueId=self.targets[key].id, linkIndex=-1,
                                           rgbaColor=[0.0, 0.7, 0.1, 0.75])
 
             # Reset best_dist

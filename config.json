@@ -28,7 +28,7 @@
     }
   },
 
-  "climber_robot": {
+  "climber": {
     "asset": "asset_climber_robot",
     "scale": 1,
     "power": 0.48,
@@ -89,7 +89,7 @@
     "orientation": [0, 0, 0, 1]
   },
 
-  "climbing_surface": {
+  "surface": {
     "asset": "climbing_wall",
     "position": [0.48, 0, 2],
     "orientation": [0, 0, 0, 1]
@@ -203,11 +203,37 @@
     }
   },
 
-  "stance_path_full": {
-    "stance_0": {
-      "desired_holds": ["hold_9", "hold_10", -1, -1],
-      "force_attach": [1, null, null, null],
+  "stance_path": {
+    "0": {
+      "desired_holds": [-1, -1, -1, -1],
+      "force_attach": [null, null, null, null],
       "ignore_holds": [[], [], [], []]
+    },
+    "1": {
+      "desired_holds": ["hold_10", "hold_9", -1, -1],
+      "force_attach": [null, null, null, null],
+      "ignore_holds": [[], [], [], []]
+    },
+    "2": {
+      "desired_holds": ["hold_10", "hold_9", "hold_2", -1],
+      "force_attach": [1, 1, null, null],
+      "ignore_holds": [[], [], [], []]
+    },
+    "3": {
+      "desired_holds": ["hold_10", "hold_9", "hold_2", "hold_1"],
+      "force_attach": [1, 1, 1, null],
+      "ignore_holds": [[], [], [], []]
+    },
+    "4": {
+      "desired_holds": ["hold_10", "hold_13", "hold_2", "hold_1"],
+      "force_attach": [1, null, 1, 1],
+      "ignore_holds": [[], ["hold_9"], [], []]
+    },
+    "5": {
+      "desired_holds": ["hold_10", "hold_13", "hold_2", "hold_5"],
+      "force_attach": [1, 1, 1, null],
+      "ignore_holds": [[], [], [], ["hold_1"]]
     }
   }
+
 }

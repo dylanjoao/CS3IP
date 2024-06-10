@@ -13,16 +13,9 @@ from stable_baselines3.common.vec_env import SubprocVecEnv, VecVideoRecorder, Ve
 from stable_baselines3.common.utils import set_random_seed
 from stable_baselines3.common.callbacks import EvalCallback
 
-from torso_climb.env.torso_climb_env import Reward
-from typing import List
-
 import wandb
 from wandb.integration.sb3 import WandbCallback
 import humanoid_climb.stances as stances
-
-import pendulum_climb
-import torso_climb
-import humanoid_climb
 
 # Create directories to hold models and logs
 model_dir = "models"
