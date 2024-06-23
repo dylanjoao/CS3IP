@@ -1,5 +1,6 @@
 > [!WARNING]
-> The Humanoid Climbing Environment with details can be found [here](https://github.com/dylanjoao/HumanoidClimbEnv)
+> **This repository is no longer maintained** <br/>
+> **The Humanoid Climbing Environment has been moved to** **[here](https://github.com/dylanjoao/HumanoidClimbEnv)**
 
 # CS3IP
  
